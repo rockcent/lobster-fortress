@@ -1,0 +1,207 @@
+{
+  "title": "OpenClaw Local Control",
+  "subtitle": "在 Mac mini 本机管理正在运行的 OpenClaw，并提供原生工作台代理。",
+  "workspaceRoot": "/Volumes/rock2/codex/openclaw-console",
+  "refreshIntervalMs": 15000,
+  "remote": {
+    "mode": "local",
+    "gatewayPort": 18789,
+    "stateDirectory": "/Users/rock/.openclaw",
+    "tempLogDirectory": "/tmp/openclaw"
+  },
+  "services": [
+    {
+      "id": "openclaw-gateway",
+      "name": "OpenClaw Gateway",
+      "description": "本机网关由 launchctl 的 watchdog 脚本保活，真正监听端口是 18789。",
+      "workingDirectory": "/Users/rock/.openclaw",
+      "logPath": "/tmp/openclaw-guardian.log",
+      "commands": {
+        "status": "lsof -nP -iTCP:18789 -sTCP:LISTEN >/dev/null 2>&1 && echo running || echo stopped",
+        "start": "launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+        "stop": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true",
+        "restart": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh"
+      },
+      "metrics": [
+        {
+          "label": "Port",
+          "value": "18789"
+        },
+        {
+          "label": "Supervisor",
+          "value": "launchctl watchdog"
+        }
+      ]
+    },
+    {
+      "id": "openclaw-models",
+      "name": "OpenClaw Models",
+      "description": "模型配置状态检查。这个模块当前更适合做检查，不适合做启停。",
+      "workingDirectory": "/Users/rock/.openclaw",
+      "commands": {
+        "status": "test -f /Users/rock/.openclaw/agents/main/agent/models.json && echo configured || echo missing"
+      },
+      "metrics": [
+        {
+          "label": "Agent",
+          "value": "main"
+        },
+        {
+          "label": "Check",
+          "value": "models status"
+        }
+      ]
+    }
+  ],
+  "panels": [
+    {
+      "id": "workspace",
+      "title": "State Dir",
+      "path": "/Users/rock/.openclaw",
+      "description": "OpenClaw 主状态目录"
+    },
+    {
+      "id": "workspace-root",
+      "title": "Workspace",
+      "path": "/Users/rock/.openclaw/workspace",
+      "description": "OpenClaw 工作区"
+    },
+    {
+      "id": "launchagents",
+      "title": "LaunchAgents",
+      "path": "/Users/rock/Library/LaunchAgents",
+      "description": "watchdog 与其他自启动配置"
+    },
+    {
+      "id": "tmp-openclaw",
+      "title": "Temp Logs",
+      "path": "/tmp/openclaw",
+      "description": "网关临时日志目录"
+    }
+  ],
+  "links": [
+    {
+      "label": "OpenClaw Config",
+      "href": "/#config"
+    }
+  ],
+  "agentIdentity": {
+    "main": {
+      "roleName": "帮主",
+      "displayName": "小八",
+      "emoji": "🦞"
+    },
+    "content": {
+      "roleName": "洞主",
+      "displayName": "笔仙",
+      "emoji": "✍️"
+    },
+    "social": {
+      "roleName": "蛛使",
+      "displayName": "蛛儿",
+      "emoji": "🕸️"
+    },
+    "canmou": {
+      "roleName": "军师",
+      "displayName": "卧龙",
+      "emoji": "🐉"
+    },
+    "evolver": {
+      "roleName": "鲁班",
+      "displayName": "进化官",
+      "emoji": "🛠️"
+    },
+    "community": {
+      "roleName": "麒麟使",
+      "displayName": "麒麟",
+      "emoji": "🦄"
+    },
+    "trader": {
+      "roleName": "财神",
+      "displayName": "盘龙",
+      "emoji": "🐲"
+    },
+    "assistant": {
+      "roleName": "太监",
+      "displayName": "小八助理",
+      "emoji": "🫏"
+    },
+    "webops": {
+      "roleName": "运维官",
+      "displayName": "WebOps",
+      "emoji": "🖥️"
+    },
+    "chief": {
+      "roleName": "指挥官",
+      "displayName": "Chief",
+      "emoji": "👑"
+    },
+    "brand-cjd": {
+      "roleName": "藏金洞品牌官",
+      "displayName": "CJD",
+      "emoji": "💼"
+    },
+    "brand-lok": {
+      "roleName": "乐总说透了品牌官",
+      "displayName": "乐总",
+      "emoji": "🎯"
+    },
+    "ai-intel": {
+      "roleName": "AI情报官",
+      "displayName": "AI情报",
+      "emoji": "🔍"
+    }
+  },
+  "agentConsole": {
+    "main": {
+      "thinking": "high",
+      "modelLabelOverride": "openai-codex/gpt-5.4",
+      "providerLabelOverride": "openai",
+      "reuseLatestSession": true
+    },
+    "trader": {
+      "thinking": "high"
+    },
+    "content": {
+      "thinking": "high"
+    },
+    "social": {
+      "thinking": "medium"
+    },
+    "canmou": {
+      "thinking": "high"
+    },
+    "evolver": {
+      "thinking": "high"
+    },
+    "community": {
+      "thinking": "medium"
+    },
+    "assistant": {
+      "thinking": "medium"
+    },
+    "webops": {
+      "thinking": "medium"
+    },
+    "chief": {
+      "thinking": "high"
+    },
+    "brand-cjd": {
+      "thinking": "medium"
+    },
+    "brand-lok": {
+      "thinking": "medium"
+    },
+    "ai-intel": {
+      "thinking": "high"
+    }
+  },
+  "telegramBots": {
+    "@your_bot_token": {
+      "name": "主Bot",
+      "enabled": true,
+      "defaultAgentId": "main",
+      "groups": {}
+    }
+  }
+}

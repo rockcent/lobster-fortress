@@ -1,0 +1,151 @@
+{
+  "title": "OpenClaw Local Control",
+  "subtitle": "在 Mac mini 本机管理正在运行的 OpenClaw，并提供原生工作台代理。",
+  "workspaceRoot": "/Volumes/rock2/codex/openclaw-console",
+  "refreshIntervalMs": 15000,
+  "remote": {
+    "mode": "local",
+    "gatewayPort": 18789,
+    "stateDirectory": "/Users/rock/.openclaw",
+    "tempLogDirectory": "/tmp/openclaw"
+  },
+  "services": [
+    {
+      "id": "openclaw-gateway",
+      "name": "OpenClaw Gateway",
+      "description": "本机网关由 launchctl 的 watchdog 脚本保活，真正监听端口是 18789。",
+      "workingDirectory": "/Users/rock/.openclaw",
+      "logPath": "/tmp/openclaw-guardian.log",
+      "commands": {
+        "status": "lsof -nP -iTCP:18789 -sTCP:LISTEN >/dev/null 2>&1 && echo running || echo stopped",
+        "start": "launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+        "stop": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true",
+        "restart": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh"
+      },
+      "metrics": [
+        {
+          "label": "Port",
+          "value": "18789"
+        },
+        {
+          "label": "Supervisor",
+          "value": "launchctl watchdog"
+        }
+      ]
+    },
+    {
+      "id": "openclaw-models",
+      "name": "OpenClaw Models",
+      "description": "模型配置状态检查。这个模块当前更适合做检查，不适合做启停。",
+      "workingDirectory": "/Users/rock/.openclaw",
+      "commands": {
+        "status": "test -f /Users/rock/.openclaw/agents/main/agent/models.json && echo configured || echo missing"
+      },
+      "metrics": [
+        {
+          "label": "Agent",
+          "value": "main"
+        },
+        {
+          "label": "Check",
+          "value": "models status"
+        }
+      ]
+    }
+  ],
+  "panels": [
+    {
+      "id": "workspace",
+      "title": "State Dir",
+      "path": "/Users/rock/.openclaw",
+      "description": "OpenClaw 主状态目录"
+    },
+    {
+      "id": "workspace-root",
+      "title": "Workspace",
+      "path": "/Users/rock/.openclaw/workspace",
+      "description": "OpenClaw 工作区"
+    },
+    {
+      "id": "launchagents",
+      "title": "LaunchAgents",
+      "path": "/Users/rock/Library/LaunchAgents",
+      "description": "watchdog 与其他自启动配置"
+    },
+    {
+      "id": "tmp-openclaw",
+      "title": "Temp Logs",
+      "path": "/tmp/openclaw",
+      "description": "网关临时日志目录"
+    }
+  ],
+  "links": [
+    {
+      "label": "OpenClaw Config",
+      "href": "/#config"
+    }
+  ],
+  "agentIdentity": {
+    "main": {
+      "roleName": "CHIEF",
+      "displayName": "小八",
+      "emoji": "🦞"
+    },
+    "content": {
+      "roleName": "BRAND_CJD",
+      "displayName": "笔仙",
+      "emoji": "✍️"
+    },
+    "social": {
+      "roleName": "BRAND_LOK",
+      "displayName": "蛛儿",
+      "emoji": "🕸️"
+    },
+    "webops": {
+      "roleName": "WEB_OPS",
+      "displayName": "霸总",
+      "emoji": "🕷️"
+    },
+    "assistant": {
+      "roleName": "PERSONAL",
+      "displayName": "小太监",
+      "emoji": "🫏"
+    },
+    "canmou": {
+      "roleName": "AI_INTEL",
+      "displayName": "卧龙",
+      "emoji": "🐉"
+    },
+    "evolver": {
+      "roleName": "CLAW_LAB",
+      "displayName": "爪博士",
+      "emoji": "🛠️"
+    },
+    "trader": {
+      "roleName": "TRADER",
+      "displayName": "盘龙",
+      "emoji": "🐲"
+    }
+  }
+    "trader": {
+      "roleName": "TRADER",
+      "displayName": "盘龙",
+      "emoji": "🐲"
+    },
+    "community": {
+      "roleName": "COMMUNITY",
+      "displayName": "麒麟",
+      "emoji": "🦄"
+    }
+  },
+  "agentConsole": {
+    "main": {
+      "thinking": "high",
+      "modelLabelOverride": "openai-codex/gpt-5.4",
+      "providerLabelOverride": "openai"
+    },
+    "trader": {
+      "thinking": "high"
+    }
+  }
+}

@@ -1,0 +1,408 @@
+{
+  "activity": [
+    {
+      "id": "openclaw-gateway-restart-1774080730948",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 3147,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-21T08:12:10.948Z"
+    },
+    {
+      "id": "openclaw-gateway-status-1773375860328",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "status",
+      "command": "lsof -nP -iTCP:18789 -sTCP:LISTEN >/dev/null 2>&1 && echo running || echo stopped",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 58,
+      "stdout": "running",
+      "stderr": "",
+      "createdAt": "2026-03-13T04:24:20.328Z"
+    },
+    {
+      "id": "openclaw-models-status-1773276885695",
+      "serviceId": "openclaw-models",
+      "serviceName": "OpenClaw Models",
+      "action": "status",
+      "command": "test -f /Users/rock/.openclaw/agents/main/agent/models.json && echo configured || echo missing",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 69,
+      "stdout": "configured",
+      "stderr": "",
+      "createdAt": "2026-03-12T00:54:45.695Z"
+    }
+  ],
+  "agentRuns": [
+    {
+      "id": "content-1773419824465",
+      "agentId": "content",
+      "sessionId": "63955382-269e-4e0d-bddd-ebdb61a7cfc3",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3668,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 36,
+        "output": 27,
+        "total": 15414
+      },
+      "createdAt": "2026-03-13T16:37:04.465Z"
+    },
+    {
+      "id": "assistant-1773419778291",
+      "agentId": "assistant",
+      "sessionId": "f50e43e6-61aa-4215-a55a-52aba092977f",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3983,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 28,
+        "output": 24,
+        "total": 13678
+      },
+      "createdAt": "2026-03-13T16:36:18.291Z"
+    },
+    {
+      "id": "trader-1773419773308",
+      "agentId": "trader",
+      "sessionId": "eb106ce4-0280-4539-b312-a413b6a4b998",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3079,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:36:13.308Z"
+    },
+    {
+      "id": "community-1773419769237",
+      "agentId": "community",
+      "sessionId": "2f2fed63-83d5-4aed-8cc3-3660bfb8bf75",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4354,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:36:09.237Z"
+    },
+    {
+      "id": "evolver-1773419763897",
+      "agentId": "evolver",
+      "sessionId": "6f7c7ea3-1e1b-4ae6-aa3a-ddd4b3f99a5d",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4976,
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "usage": {
+        "input": 15034,
+        "output": 86,
+        "total": 27193
+      },
+      "createdAt": "2026-03-13T16:36:03.897Z"
+    },
+    {
+      "id": "canmou-1773419757926",
+      "agentId": "canmou",
+      "sessionId": "39afd690-2acd-4d62-9bda-4539cb067479",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4195,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 28,
+        "output": 25,
+        "total": 14503
+      },
+      "createdAt": "2026-03-13T16:35:57.926Z"
+    },
+    {
+      "id": "social-1773419752658",
+      "agentId": "social",
+      "sessionId": "9af90816-f9e8-4a5e-9768-4f0f2839f4df",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3023,
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite-preview",
+      "usage": {
+        "input": 37393,
+        "output": 1,
+        "total": 69857
+      },
+      "createdAt": "2026-03-13T16:35:52.658Z"
+    },
+    {
+      "id": "content-1773419748651",
+      "agentId": "content",
+      "sessionId": "63955382-269e-4e0d-bddd-ebdb61a7cfc3",
+      "message": "回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4318,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 36,
+        "output": 22,
+        "total": 15251
+      },
+      "createdAt": "2026-03-13T16:35:48.651Z"
+    },
+    {
+      "id": "main-1773419743342",
+      "agentId": "main",
+      "sessionId": "645b0791-0290-44f9-9bbb-068a7c6995c5",
+      "message": "回复 ok",
+      "reply": "<!--CONTENT_SECURITY_BLOCK-->抱歉该任务处理异常，请更换任务再尝试，为保障使用，该问答将在3秒后被删除",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 6536,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 1007407,
+        "output": 1202,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:35:43.342Z"
+    },
+    {
+      "id": "trader-1773419607422",
+      "agentId": "trader",
+      "sessionId": "eb106ce4-0280-4539-b312-a413b6a4b998",
+      "message": "请回复 ok",
+      "reply": "ok",
+      "status": "ok",
+      "summary": "completed",
+      "durationMs": 3212,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:33:27.422Z"
+    },
+    {
+      "id": "social-1773419603092",
+      "agentId": "social",
+      "sessionId": "9af90816-f9e8-4a5e-9768-4f0f2839f4df",
+      "message": "请回复 ok",
+      "reply": "ok",
+      "status": "ok",
+      "summary": "completed",
+      "durationMs": 2524,
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite-preview",
+      "usage": {
+        "input": 37227,
+        "output": 1,
+        "total": 37228
+      },
+      "createdAt": "2026-03-13T16:33:23.092Z"
+    },
+    {
+      "id": "assistant-1773419558092",
+      "agentId": "assistant",
+      "sessionId": "f50e43e6-61aa-4215-a55a-52aba092977f",
+      "message": "请回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4319,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 28,
+        "output": 24,
+        "total": 13678
+      },
+      "createdAt": "2026-03-13T16:32:38.092Z"
+    },
+    {
+      "id": "content-1773419552768",
+      "agentId": "content",
+      "sessionId": "63955382-269e-4e0d-bddd-ebdb61a7cfc3",
+      "message": "请回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 4800,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 36,
+        "output": 25,
+        "total": 15088
+      },
+      "createdAt": "2026-03-13T16:32:32.768Z"
+    },
+    {
+      "id": "content-1773419263877",
+      "agentId": "content",
+      "sessionId": "63955382-269e-4e0d-bddd-ebdb61a7cfc3",
+      "message": "请只回复 ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 19527,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 36,
+        "output": 27,
+        "total": 14924
+      },
+      "createdAt": "2026-03-13T16:27:43.877Z"
+    },
+    {
+      "id": "assistant-1773419197901",
+      "agentId": "assistant",
+      "sessionId": "f50e43e6-61aa-4215-a55a-52aba092977f",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3989,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 28,
+        "output": 24,
+        "total": 13678
+      },
+      "createdAt": "2026-03-13T16:26:37.901Z"
+    },
+    {
+      "id": "trader-1773419192552",
+      "agentId": "trader",
+      "sessionId": "eb106ce4-0280-4539-b312-a413b6a4b998",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3933,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:26:32.552Z"
+    },
+    {
+      "id": "community-1773419187290",
+      "agentId": "community",
+      "sessionId": "2f2fed63-83d5-4aed-8cc3-3660bfb8bf75",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 5775,
+      "provider": "minimax",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-13T16:26:27.290Z"
+    },
+    {
+      "id": "evolver-1773419180164",
+      "agentId": "evolver",
+      "sessionId": "6f7c7ea3-1e1b-4ae6-aa3a-ddd4b3f99a5d",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 5289,
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "usage": {
+        "input": 14868,
+        "output": 111,
+        "total": 14868
+      },
+      "createdAt": "2026-03-13T16:26:20.164Z"
+    },
+    {
+      "id": "canmou-1773419172401",
+      "agentId": "canmou",
+      "sessionId": "39afd690-2acd-4d62-9bda-4539cb067479",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3844,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.5-highspeed",
+      "usage": {
+        "input": 28,
+        "output": 25,
+        "total": 14340
+      },
+      "createdAt": "2026-03-13T16:26:12.401Z"
+    },
+    {
+      "id": "social-1773419167246",
+      "agentId": "social",
+      "sessionId": "9af90816-f9e8-4a5e-9768-4f0f2839f4df",
+      "message": "请回复:ok",
+      "reply": "ok",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 3225,
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite-preview",
+      "usage": {
+        "input": 37061,
+        "output": 1,
+        "total": 45179
+      },
+      "createdAt": "2026-03-13T16:26:07.246Z"
+    }
+  ]
+}
