@@ -4,6 +4,33 @@ import path from 'node:path';
 import { spawn, execSync } from 'node:child_process';
 import { getOpenClawActivity, getOpenClawAgentRuns, getOpenClawStorePath, updateOpenClawActivity, updateOpenClawAgentRuns } from './openclawStore';
 
+export type ApiErrorCode =
+  | 'service_not_found'
+  | 'action_not_configured'
+  | 'action_failed'
+  | 'runtime_action_failed'
+  | 'config_save_failed'
+  | 'config_invalid'
+  | 'agent_command_failed'
+  | 'agent_id_required'
+  | 'message_required'
+  | 'invalid_json'
+  | 'shortcut_target_required'
+  | 'invalid_url'
+  | 'invalid_path'
+  | 'remote_path_not_allowed';
+
+export class ApiError extends Error {
+  constructor(
+    public readonly code: ApiErrorCode,
+    message: string,
+    public readonly status: number = 400,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 const getOpenClawVersion = () => {
   try {
     const output = execSync('openclaw --version', { encoding: 'utf8', timeout: 5000 });
@@ -463,7 +490,7 @@ const readLogTail = (targetPath?: string, lineCount = 10) => {
   }
 };
 
-const loadConfig = (): { configPath: string; config: OpenClawConfig } => {
+export const loadConfig = (): { configPath: string; config: OpenClawConfig } => {
   if (!fileExists(DEFAULT_CONFIG_PATH)) {
     return {
       configPath: DEFAULT_CONFIG_PATH,
@@ -515,14 +542,14 @@ const loadRawConfigObject = (): { configPath: string; config: Record<string, unk
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('配置根节点必须是对象。');
+      throw new ApiError('config_invalid', '配置根节点必须是对象。');
     }
     return {
       configPath: DEFAULT_CONFIG_PATH,
       config: parsed as Record<string, unknown>,
     };
   } catch (error) {
-    throw new Error(error instanceof Error ? `配置文件 JSON 无效：${error.message}` : '配置文件 JSON 无效。');
+    throw new ApiError('invalid_json', error instanceof Error ? `配置文件 JSON 无效：${error.message}` : '配置文件 JSON 无效。');
   }
 };
 
@@ -680,20 +707,48 @@ const runShellCommandSafe = async (
       ok: false,
       code: null,
       stdout: '',
-      stderr: error instanceof Error ? error.message : 'Command failed.',
+      stderr: error instanceof Error ? error.message : '命令执行失败。',
       durationMs: 0,
     };
   }
 };
 
 const parseJsonCommandOutput = <T>(output: string): T => {
-  const cleaned = output
-    .split(/\r?\n/)
-    .filter((line) => !line.startsWith('[plugins]'))
-    .join('\n')
-    .trim();
+  // Extract JSON by finding where non-JSON content starts (plugin warnings, etc.)
+  // These typically start with [plugins], [wecom], timestamps, etc.
+  const trimmed = output.trim();
+  
+  // Find where JSON ends - look for common warning patterns that come after JSON
+  const warningPatterns = ['[plugins]', '[wecom]', 'Node.js v', 'openclaw-console'];
+  let jsonEnd = -1;
+  
+  for (const pattern of warningPatterns) {
+    const idx = trimmed.indexOf(pattern);
+    if (idx > 0 && (jsonEnd < 0 || idx < jsonEnd)) {
+      jsonEnd = idx;
+    }
+  }
+  
+  // If no warning found, try bracket tracking
+  if (jsonEnd <= 0) {
+    let depth = 0, inString = false, escaped = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i];
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\' && inString) { escaped = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{' || ch === '[') { depth++; }
+      else if (ch === '}' || ch === ']') { depth--; if (depth === 0) { jsonEnd = i + 1; break; } }
+    }
+  }
+  
+  if (jsonEnd <= 0) {
+    jsonEnd = trimmed.length;
+  }
 
-  return JSON.parse(cleaned) as T;
+  const jsonStr = trimmed.substring(0, jsonEnd).trim();
+  return JSON.parse(jsonStr) as T;
 };
 
 const getRemoteRuntimeDefaults = (config: OpenClawConfig) => {
@@ -719,19 +774,19 @@ const getRemoteRuntimeDefaults = (config: OpenClawConfig) => {
   };
 };
 
-const runOpenClawJsonCommand = async <T>(args: string[], config: OpenClawConfig) => {
+export const runOpenClawJsonCommand = async <T>(args: string[], config: OpenClawConfig) => {
   const command = buildOpenClawCliCommand(args);
   const remoteDefaults = getRemoteRuntimeDefaults(config);
   const result = await runShellCommand(command, config.workspaceRoot || process.cwd(), 250000, remoteDefaults.remote);
   const source = result.stdout || result.stderr;
   if (!result.ok && !source) {
-    throw new Error('OpenClaw command failed.');
+    throw new ApiError('agent_command_failed', 'OpenClaw command failed.');
   }
 
   try {
     return parseJsonCommandOutput<T>(source);
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Failed to parse OpenClaw JSON output.');
+    throw new ApiError('agent_command_failed', error instanceof Error ? error.message : 'OpenClaw JSON 输出解析失败。');
   }
 };
 
@@ -1143,12 +1198,12 @@ export const runOpenClawAction = async (serviceId: string, action: OpenClawActio
   const { config } = loadConfig();
   const service = config.services.find((item) => item.id === serviceId);
   if (!service) {
-    throw new Error('Service not found.');
+    throw new ApiError('service_not_found', 'Service not found.');
   }
 
   const command = service.commands?.[action]?.trim();
   if (!command) {
-    throw new Error(`Action "${action}" is not configured for ${service.name}.`);
+    throw new ApiError('action_not_configured', `Action "${action}" is not configured for ${service.name}.`);
   }
 
   const cwd = service.workingDirectory || process.cwd();
@@ -1183,14 +1238,14 @@ export const runOpenClawRuntimeAction = async (action: OpenClawRuntimeAction): P
   let serviceName = 'Runtime';
   if (action === 'repair-watchdog') {
     if (!fileExists(WATCHDOG_PLIST_PATH)) {
-      throw new Error(`Watchdog plist not found: ${WATCHDOG_PLIST_PATH}`);
+      throw new ApiError('runtime_action_failed', `Watchdog plist not found: ${WATCHDOG_PLIST_PATH}`);
     }
     command = `launchctl bootstrap gui/$(id -u) ${quoteShellArg(WATCHDOG_PLIST_PATH)} || launchctl kickstart -k gui/$(id -u)/${WATCHDOG_LABEL}`;
     serviceName = 'Watchdog Repair';
   } else {
     const runtime = await getRuntimeSnapshot(config);
     if (!runtime.gatewayPid) {
-      throw new Error('Gateway PID is unavailable, cannot send SIGHUP.');
+      throw new ApiError('runtime_action_failed', 'Gateway PID is unavailable, cannot send SIGHUP.');
     }
     command = `kill -HUP ${quoteShellArg(runtime.gatewayPid)}`;
     serviceName = 'Gateway Reload';
@@ -1234,13 +1289,13 @@ export const getOpenClawConfigDocument = () => {
 export const saveOpenClawConfigDocument = async (content: string, reloadGateway = false) => {
   const trimmed = content.trim();
   if (!trimmed) {
-    throw new Error('Config content is empty.');
+    throw new ApiError('config_save_failed', 'Config content is empty.');
   }
 
   try {
     JSON.parse(trimmed);
   } catch (error) {
-    throw new Error(error instanceof Error ? `Invalid JSON: ${error.message}` : 'Invalid JSON.');
+    throw new ApiError('invalid_json', error instanceof Error ? `JSON 解析失败：${error.message}` : 'JSON 解析失败。');
   }
 
   const { configPath } = loadConfig();
@@ -1266,8 +1321,11 @@ export const runOpenClawAgentCommand = async (input: {
   const { config } = loadConfig();
   const agentId = input.agentId.trim();
   const message = input.message.trim();
-  if (!agentId || !message) {
-    throw new Error('agentId and message are required.');
+  if (!agentId) {
+    throw new ApiError('agent_id_required', 'agentId is required.');
+  }
+  if (!message) {
+    throw new ApiError('message_required', 'message is required.');
   }
 
   const buildArgs = (sessionId?: string) => {
@@ -1307,7 +1365,8 @@ export const runOpenClawAgentCommand = async (input: {
     payload = await runOpenClawJsonCommand(buildArgs(requestedSessionId), config);
   } catch (error) {
     if (!requestedSessionId) {
-      throw error;
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('agent_command_failed', error instanceof Error ? error.message : 'Agent command failed.');
     }
     payload = await runOpenClawJsonCommand(buildArgs(undefined), config);
     usedSessionId = undefined;
@@ -1351,8 +1410,11 @@ export const runOpenClawAgentCommandStream = async (
   const { config } = loadConfig();
   const agentId = input.agentId.trim();
   const message = input.message.trim();
-  if (!agentId || !message) {
-    throw new Error('agentId and message are required.');
+  if (!agentId) {
+    throw new ApiError('agent_id_required', 'agentId is required.');
+  }
+  if (!message) {
+    throw new ApiError('message_required', 'message is required.');
   }
 
   const remoteDefaults = getRemoteRuntimeDefaults(config);
@@ -1419,7 +1481,7 @@ export const runOpenClawAgentCommandStream = async (
           ok: false,
           code: null,
           reply: stdout.slice(0, 250000),
-          stderr: `${stderr}\nCommand timed out after ${Math.round(timeoutMs / 1000)}s.`.trim().slice(0, 250000),
+          stderr: `${stderr}\n命令执行超时（${Math.round(timeoutMs / 1000)}秒）。`.trim().slice(0, 250000),
         });
       }, timeoutMs);
 
@@ -1466,7 +1528,7 @@ export const runOpenClawAgentCommandStream = async (
 
     if (!streamed.ok) {
       const messageText = trimOutput(streamed.stderr || streamed.reply || 'Agent command failed.');
-      throw new Error(messageText);
+      throw new ApiError('agent_command_failed', messageText);
     }
     return streamed;
   };
@@ -1478,9 +1540,10 @@ export const runOpenClawAgentCommandStream = async (
     streamed = await executeAttempt(requestedSessionId);
   } catch (error) {
     if (!requestedSessionId) {
-      const messageText = error instanceof Error ? error.message : 'Agent command failed.';
+      const messageText = error instanceof Error ? error.message : '助理命令执行失败。';
       onEvent?.({ type: 'error', agentId, message: messageText });
-      throw error;
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('agent_command_failed', messageText);
     }
     try {
       streamed = await executeAttempt(undefined);
@@ -1488,7 +1551,8 @@ export const runOpenClawAgentCommandStream = async (
     } catch (retryError) {
       const messageText = retryError instanceof Error ? retryError.message : 'Agent command failed.';
       onEvent?.({ type: 'error', agentId, message: messageText });
-      throw retryError;
+      if (retryError instanceof ApiError) throw retryError;
+      throw new ApiError('agent_command_failed', messageText);
     }
   }
 
@@ -1525,7 +1589,7 @@ export const getOpenClawAgentModels = async (agentIdRaw: string): Promise<OpenCl
   const { config } = loadConfig();
   const agentId = agentIdRaw.trim();
   if (!agentId) {
-    throw new Error('agentId is required.');
+    throw new ApiError('agent_id_required', 'agentId is required.');
   }
 
   const [statusPayload, listPayload] = await Promise.all([
@@ -1600,13 +1664,13 @@ export const setOpenClawAgentModel = async (agentIdRaw: string, modelKeyRaw: str
   const agentId = agentIdRaw.trim();
   const modelKey = modelKeyRaw.trim();
   if (!agentId || !modelKey) {
-    throw new Error('agentId and modelKey are required.');
+    throw new ApiError('agent_models_failed', 'agentId and modelKey are required.');
   }
 
   const command = buildOpenClawCliCommand(['models', '--agent', agentId, 'set', modelKey]);
   const result = await runShellCommand(command, config.workspaceRoot || process.cwd(), 250000, config.remote);
   if (!result.ok) {
-    throw new Error(trimOutput(result.stderr || result.stdout || '切换模型失败。'));
+    throw new ApiError('set_agent_model_failed', trimOutput(result.stderr || result.stdout || '切换模型失败。'));
   }
 
   // Keep console-side override aligned with the CLI switch, so UI and actual runtime stay in sync.
@@ -1621,19 +1685,19 @@ export const runOpenClawShortcut = async (kind: ShortcutKind, target: string) =>
   const remoteDefaults = getRemoteRuntimeDefaults(config);
   const trimmedTarget = target.trim();
   if (!trimmedTarget) {
-    throw new Error('Shortcut target is required.');
+    throw new ApiError('shortcut_target_required', 'Shortcut target is required.');
   }
 
   if (kind === 'url') {
     if (!/^https?:\/\//.test(trimmedTarget)) {
-      throw new Error('Only http/https URLs are allowed.');
+      throw new ApiError('invalid_url', 'Only http/https URLs are allowed.');
     }
   } else if (!path.isAbsolute(trimmedTarget)) {
-    throw new Error('Only absolute paths are allowed.');
+    throw new ApiError('invalid_path', 'Only absolute paths are allowed.');
   }
 
   if (remoteDefaults.connectionMode === 'ssh' && kind === 'path' && trimmedTarget !== DEFAULT_CONFIG_PATH) {
-    throw new Error('Remote mode cannot open Mac mini paths directly. Use SSH or tunnel first.');
+    throw new ApiError('remote_path_not_allowed', 'Remote mode cannot open Mac mini paths directly. Use SSH or tunnel first.');
   }
 
   const command = kind === 'url'
@@ -1641,7 +1705,7 @@ export const runOpenClawShortcut = async (kind: ShortcutKind, target: string) =>
     : `open ${JSON.stringify(trimmedTarget)}`;
   const execution = await runShellCommand(command, process.cwd());
   if (!execution.ok) {
-    throw new Error(execution.stderr || execution.stdout || 'Shortcut action failed.');
+    throw new ApiError('shortcut_failed', execution.stderr || execution.stdout || 'Shortcut action failed.');
   }
 
   return {

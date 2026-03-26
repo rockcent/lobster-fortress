@@ -1,7 +1,7 @@
 {
   "activity": [
     {
-      "id": "openclaw-gateway-restart-1774080730948",
+      "id": "openclaw-gateway-restart-1774431391085",
       "serviceId": "openclaw-gateway",
       "serviceName": "OpenClaw Gateway",
       "action": "restart",
@@ -9,41 +9,221 @@
       "cwd": "/Users/rock/.openclaw",
       "ok": true,
       "code": 0,
-      "durationMs": 3147,
+      "durationMs": 189,
       "stdout": "",
       "stderr": "",
-      "createdAt": "2026-03-21T08:12:10.948Z"
+      "createdAt": "2026-03-25T09:36:31.085Z"
     },
     {
-      "id": "openclaw-gateway-status-1773375860328",
+      "id": "openclaw-gateway-restart-1774431390497",
       "serviceId": "openclaw-gateway",
       "serviceName": "OpenClaw Gateway",
-      "action": "status",
-      "command": "lsof -nP -iTCP:18789 -sTCP:LISTEN >/dev/null 2>&1 && echo running || echo stopped",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
       "cwd": "/Users/rock/.openclaw",
       "ok": true,
       "code": 0,
-      "durationMs": 58,
-      "stdout": "running",
+      "durationMs": 245,
+      "stdout": "",
       "stderr": "",
-      "createdAt": "2026-03-13T04:24:20.328Z"
+      "createdAt": "2026-03-25T09:36:30.497Z"
     },
     {
-      "id": "openclaw-models-status-1773276885695",
-      "serviceId": "openclaw-models",
-      "serviceName": "OpenClaw Models",
-      "action": "status",
-      "command": "test -f /Users/rock/.openclaw/agents/main/agent/models.json && echo configured || echo missing",
+      "id": "openclaw-gateway-restart-1774431389424",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
       "cwd": "/Users/rock/.openclaw",
       "ok": true,
       "code": 0,
-      "durationMs": 69,
-      "stdout": "configured",
+      "durationMs": 165,
+      "stdout": "",
       "stderr": "",
-      "createdAt": "2026-03-12T00:54:45.695Z"
+      "createdAt": "2026-03-25T09:36:29.424Z"
+    },
+    {
+      "id": "runtime-repair-watchdog-1774422893507",
+      "serviceId": "runtime",
+      "serviceName": "Watchdog Repair",
+      "action": "status",
+      "command": "launchctl bootstrap gui/$(id -u) \"/Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist\" || launchctl kickstart -k gui/$(id -u)/com.openclaw.gateway-watchdog",
+      "cwd": "/Volumes/rock2/codex/openclaw-console",
+      "ok": true,
+      "code": 0,
+      "durationMs": 52,
+      "stdout": "",
+      "stderr": "Bootstrap failed: 5: Input/output error\nTry re-running the command as root for richer errors.",
+      "createdAt": "2026-03-25T07:14:53.507Z"
+    },
+    {
+      "id": "runtime-repair-watchdog-1774422818325",
+      "serviceId": "runtime",
+      "serviceName": "Watchdog Repair",
+      "action": "status",
+      "command": "launchctl bootstrap gui/$(id -u) \"/Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist\" || launchctl kickstart -k gui/$(id -u)/com.openclaw.gateway-watchdog",
+      "cwd": "/Volumes/rock2/codex/openclaw-console",
+      "ok": true,
+      "code": 0,
+      "durationMs": 89,
+      "stdout": "",
+      "stderr": "Bootstrap failed: 5: Input/output error\nTry re-running the command as root for richer errors.",
+      "createdAt": "2026-03-25T07:13:38.325Z"
+    },
+    {
+      "id": "runtime-repair-watchdog-1774408732117",
+      "serviceId": "runtime",
+      "serviceName": "Watchdog Repair",
+      "action": "status",
+      "command": "launchctl bootstrap gui/$(id -u) \"/Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist\" || launchctl kickstart -k gui/$(id -u)/com.openclaw.gateway-watchdog",
+      "cwd": "/Volumes/rock2/codex/openclaw-console",
+      "ok": false,
+      "code": null,
+      "durationMs": 15002,
+      "stdout": "",
+      "stderr": "Bootstrap failed: 5: Input/output error\nTry re-running the command as root for richer errors.\n\nCommand timed out after 15s.",
+      "createdAt": "2026-03-25T03:18:52.117Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774408716243",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 176,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-25T03:18:36.243Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774408715288",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 169,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-25T03:18:35.288Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774408713648",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 194,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-25T03:18:33.648Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774408712313",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 161,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-25T03:18:32.313Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774365775343",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 3226,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-24T15:22:55.343Z"
+    },
+    {
+      "id": "openclaw-gateway-restart-1774365770857",
+      "serviceId": "openclaw-gateway",
+      "serviceName": "OpenClaw Gateway",
+      "action": "restart",
+      "command": "launchctl bootout gui/$UID/com.openclaw.gateway-watchdog >/dev/null 2>&1 || true; pkill -f openclaw-gateway || true; launchctl bootstrap gui/$UID /Users/rock/Library/LaunchAgents/com.openclaw.gateway-watchdog.plist >/dev/null 2>&1 || true; /bin/bash /Users/rock/.openclaw/scripts/watchdog.sh",
+      "cwd": "/Users/rock/.openclaw",
+      "ok": true,
+      "code": 0,
+      "durationMs": 118,
+      "stdout": "",
+      "stderr": "",
+      "createdAt": "2026-03-24T15:22:50.857Z"
     }
   ],
   "agentRuns": [
+    {
+      "id": "main-1774535817881",
+      "agentId": "main",
+      "sessionId": null,
+      "message": "ok",
+      "reply": "Key 还是没更新，还是旧的那个过期 key。\n\n你是还没去申请新的，还是申请了但没更新到我这里？",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 64061,
+      "provider": null,
+      "model": null,
+      "usage": {
+        "input": null,
+        "output": null,
+        "total": null
+      },
+      "createdAt": "2026-03-26T14:36:57.881Z"
+    },
+    {
+      "id": "main-1774365199518",
+      "agentId": "main",
+      "sessionId": "0ec8225d-ca04-48de-a0c4-1940c001d0f4",
+      "message": "请用一句话介绍你能如何帮助我。",
+      "reply": "我是你的AI大管家，帮你处理一切：信息查找、内容创作、代码开发、数据分析、任务自动化，和管理你的多个AI代理为你工作。",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 12194,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.7-highspeed",
+      "usage": {
+        "input": 89,
+        "output": 42,
+        "total": 73389
+      },
+      "createdAt": "2026-03-24T15:13:19.518Z"
+    },
+    {
+      "id": "main-1774316234667",
+      "agentId": "main",
+      "sessionId": "0ec8225d-ca04-48de-a0c4-1940c001d0f4",
+      "message": "在不在",
+      "reply": "在的，乐总",
+      "status": "completed",
+      "summary": "completed",
+      "durationMs": 8386,
+      "provider": "minimax-portal",
+      "model": "MiniMax-M2.7-highspeed",
+      "usage": {
+        "input": 90,
+        "output": 27,
+        "total": 73224
+      },
+      "createdAt": "2026-03-24T01:37:14.667Z"
+    },
     {
       "id": "content-1773419824465",
       "agentId": "content",
@@ -349,60 +529,6 @@
         "total": null
       },
       "createdAt": "2026-03-13T16:26:27.290Z"
-    },
-    {
-      "id": "evolver-1773419180164",
-      "agentId": "evolver",
-      "sessionId": "6f7c7ea3-1e1b-4ae6-aa3a-ddd4b3f99a5d",
-      "message": "请回复:ok",
-      "reply": "ok",
-      "status": "completed",
-      "summary": "completed",
-      "durationMs": 5289,
-      "provider": "gemini",
-      "model": "gemini-3.1-pro-preview",
-      "usage": {
-        "input": 14868,
-        "output": 111,
-        "total": 14868
-      },
-      "createdAt": "2026-03-13T16:26:20.164Z"
-    },
-    {
-      "id": "canmou-1773419172401",
-      "agentId": "canmou",
-      "sessionId": "39afd690-2acd-4d62-9bda-4539cb067479",
-      "message": "请回复:ok",
-      "reply": "ok",
-      "status": "completed",
-      "summary": "completed",
-      "durationMs": 3844,
-      "provider": "minimax-portal",
-      "model": "MiniMax-M2.5-highspeed",
-      "usage": {
-        "input": 28,
-        "output": 25,
-        "total": 14340
-      },
-      "createdAt": "2026-03-13T16:26:12.401Z"
-    },
-    {
-      "id": "social-1773419167246",
-      "agentId": "social",
-      "sessionId": "9af90816-f9e8-4a5e-9768-4f0f2839f4df",
-      "message": "请回复:ok",
-      "reply": "ok",
-      "status": "completed",
-      "summary": "completed",
-      "durationMs": 3225,
-      "provider": "gemini",
-      "model": "gemini-3.1-flash-lite-preview",
-      "usage": {
-        "input": 37061,
-        "output": 1,
-        "total": 45179
-      },
-      "createdAt": "2026-03-13T16:26:07.246Z"
     }
   ]
 }

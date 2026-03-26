@@ -10,6 +10,14 @@ import agentCommandStreamHandler from '../api/openclaw/agent-command-stream';
 import agentModelsHandler from '../api/openclaw/agent-models';
 import runtimeActionHandler from '../api/openclaw/runtime-action';
 import configHandler from '../api/openclaw/config';
+import upgradeStatusHandler from '../api/openclaw/upgrade-status';
+import agentCronsHandler from '../api/openclaw/agent-crons';
+import serverStatusHandler from '../api/openclaw/server-status';
+import cronSummaryHandler from '../api/openclaw/cron-summary';
+import cronJobsListHandler from '../api/openclaw/cron-jobs-list';
+import sessionsListHandler from '../api/sessions/list';
+import sessionsDeleteHandler from '../api/sessions/delete';
+import sessionsMessagesHandler from '../api/sessions/messages';
 import { handleNativeGatewayUpgrade, handleNativeProxyRequest, isNativeGatewayPath, isNativeProxyPath } from './nativeProxy';
 
 type ApiHandler = (req: any, res: any) => Promise<void> | void;
@@ -31,6 +39,14 @@ const API_ROUTES = new Map<string, ApiHandler>([
   ['POST /api/openclaw/runtime-action', runtimeActionHandler],
   ['GET /api/openclaw/config', configHandler],
   ['POST /api/openclaw/config', configHandler],
+  ['GET /api/upgrade/status', upgradeStatusHandler],
+  ['GET /api/openclaw/agent-crons', agentCronsHandler],
+  ['GET /api/openclaw/server-status', serverStatusHandler],
+  ['GET /api/openclaw/cron-jobs-list', cronJobsListHandler],
+  ['GET /api/openclaw/cron-summary', cronSummaryHandler],
+  ['GET /api/sessions', sessionsListHandler],
+  ['DELETE /api/sessions', sessionsDeleteHandler],
+  ['GET /api/sessions/messages', sessionsMessagesHandler],
 ]);
 
 const MIME_TYPES: Record<string, string> = {
@@ -143,7 +159,7 @@ const handleApiRequest = async (req: IncomingMessage, res: ServerResponse, url: 
   const handler = API_ROUTES.get(routeKey);
 
   if (!handler) {
-    sendJson(res, 404, { error: { code: 'not_found', message: 'API route not found.' } });
+    sendJson(res, 404, { error: { code: 'not_found', message: 'API 路由不存在。' } });
     return;
   }
 
@@ -156,7 +172,7 @@ const handleApiRequest = async (req: IncomingMessage, res: ServerResponse, url: 
   try {
     await handler(request, response);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error.';
+    const message = error instanceof Error ? error.message : '服务器内部错误。';
     sendJson(res, 500, { error: { code: 'internal_error', message } });
   }
 };

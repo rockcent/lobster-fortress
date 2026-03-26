@@ -178,6 +178,8 @@ export const explainModelDiagnosticFailure = (message: string) => {
   return '链路探测失败，请检查模型配置、网关日志与提供方状态。';
 };
 
+export const MODEL_DIAGNOSTIC_PROMPT = '链路诊断：请仅回复 OK。';
+
 export const pickSnapshotModel = (snapshot?: OpenClawAgentModelSnapshot | null) => {
   if (!snapshot) return '';
   return (

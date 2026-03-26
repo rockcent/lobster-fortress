@@ -41,7 +41,7 @@ export default async function handler(req: any, res: any) {
       res.end();
     }
   } catch (error) {
-    const messageText = error instanceof Error ? error.message : 'Agent command failed.';
+    const messageText = error instanceof Error ? error.message : '助理命令执行失败。';
     writeEvent(res, {
       type: 'error',
       agentId,

@@ -12,6 +12,181 @@
   --openclaw-gold: #ffd58a;
 }
 
+/* ── Commander Header Strip ── */
+.openclaw-commander-strip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(102, 237, 255, 0.18);
+  background: linear-gradient(135deg, rgba(12, 24, 56, 0.78), rgba(7, 14, 34, 0.9)),
+    var(--openclaw-panel);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+.openclaw-commander-strip-kpis {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.openclaw-commander-strip-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(102, 237, 255, 0.1);
+  background: rgba(7, 16, 39, 0.5);
+  min-width: 72px;
+  text-align: center;
+  position: relative;
+}
+
+/* Sync rate arc gauge inside KPI */
+.openclaw-commander-strip-kpi.has-gauge {
+  min-width: 90px;
+}
+
+.openclaw-commander-strip-kpi .openclaw-gauge-ring {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+}
+
+.openclaw-commander-strip-kpi .openclaw-gauge-ring circle.track {
+  fill: none;
+  stroke: rgba(102, 237, 255, 0.12);
+  stroke-width: 3;
+}
+
+.openclaw-commander-strip-kpi .openclaw-gauge-ring circle.fill {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;
+}
+
+.openclaw-commander-strip-kpi .openclaw-gauge-ring circle.fill.tone-healthy { stroke: #10b981; filter: drop-shadow(0 0 3px #10b981); }
+.openclaw-commander-strip-kpi .openclaw-gauge-ring circle.fill.tone-warning { stroke: #f59e0b; filter: drop-shadow(0 0 3px #f59e0b); }
+.openclaw-commander-strip-kpi .openclaw-gauge-ring circle.fill.tone-critical { stroke: #fb7185; filter: drop-shadow(0 0 3px #fb7185); }
+
+.openclaw-commander-strip-kpi span {
+  font-size: 11px;
+  color: var(--openclaw-muted);
+  white-space: nowrap;
+}
+
+.openclaw-commander-strip-kpi strong {
+  font-size: 17px;
+  margin-top: 2px;
+  color: var(--openclaw-text);
+}
+
+.openclaw-commander-strip-kpi.tone-healthy strong { color: #10b981; }
+.openclaw-commander-strip-kpi.tone-warning strong { color: #f59e0b; }
+.openclaw-commander-strip-kpi.tone-critical strong { color: #fb7185; }
+
+.openclaw-commander-strip-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(102, 237, 255, 0.14);
+  flex-shrink: 0;
+}
+
+.openclaw-commander-strip-charts {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.openclaw-commander-strip-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.openclaw-commander-strip-chart span {
+  font-size: 11px;
+  color: var(--openclaw-muted);
+  white-space: nowrap;
+}
+
+.openclaw-commander-strip-chart svg {
+  width: 120px;
+  height: 32px;
+}
+
+.openclaw-commander-strip-chart polyline {
+  fill: none;
+  stroke: rgba(102, 237, 255, 0.9);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(102, 237, 255, 0.5));
+}
+
+.openclaw-commander-strip-chart.pink polyline {
+  stroke: rgba(255, 99, 211, 0.9);
+  filter: drop-shadow(0 0 4px rgba(255, 99, 211, 0.5));
+}
+
+/* Phase 4: Comm links in two-column layout, centered */
+.openclaw-commander-strip-links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 14px;
+  max-width: 340px;
+  overflow: hidden;
+  justify-items: center;
+}
+
+.openclaw-commander-strip-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  max-width: 148px;
+}
+
+.openclaw-commander-strip-link i {
+  display: block;
+  flex: 1;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(102, 237, 255, 0.3), rgba(255, 99, 211, 0.7));
+}
+
+.openclaw-commander-strip-link span,
+.openclaw-commander-strip-link strong {
+  font-size: 12px;
+  color: var(--openclaw-muted);
+}
+
+.openclaw-commander-strip-link strong {
+  color: var(--openclaw-text);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .openclaw-commander-strip {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .openclaw-commander-strip-links { max-width: 100%; }
+}
+
 .openclaw-shell {
   min-height: 100vh;
   color: var(--openclaw-text);
@@ -554,7 +729,20 @@
 
 .openclaw-stat-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 16px;
+}
+
+.openclaw-hero-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 24px;
+}
+
+.openclaw-hero-action-buttons .openclaw-action-btn {
+  padding: 8px 18px;
+  border-radius: 14px;
+  font-size: 13px;
 }
 
 .openclaw-stat-card,
@@ -1913,6 +2101,90 @@
   font-size: 13px;
 }
 
+.openclaw-agent-task-section {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.openclaw-agent-task-current {
+  border-radius: 10px;
+  border: 1px solid rgba(102, 237, 255, 0.2);
+  background: rgba(4, 11, 28, 0.5);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.openclaw-agent-task-current span {
+  font-size: 11px;
+  color: var(--openclaw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.openclaw-agent-task-current strong {
+  font-size: 13px;
+  color: rgba(102, 237, 255, 0.92);
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.openclaw-agent-task-queue {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 204, 102, 0.2);
+  background: rgba(4, 11, 28, 0.5);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.openclaw-agent-task-queue > span {
+  font-size: 11px;
+  color: rgba(255, 204, 102, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.openclaw-agent-task-queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 204, 102, 0.08);
+}
+
+.openclaw-agent-task-queue-item:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.openclaw-agent-task-queue-item strong {
+  font-size: 13px;
+  color: rgba(255, 204, 102, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.openclaw-agent-task-queue-item small {
+  font-size: 11px;
+  color: var(--openclaw-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.openclaw-agent-task-queue-more {
+  font-size: 11px;
+  color: var(--openclaw-muted);
+  text-align: center;
+  padding-top: 2px;
+}
+
 .openclaw-commander-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2915,4 +3187,249 @@
     width: 100%;
     font-size: 12px;
   }
+}
+
+/* ── Phase 4: Real-time Status Panel ── */
+.openclaw-realtime-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(102, 237, 255, 0.14);
+  background: rgba(7, 16, 39, 0.6);
+  min-width: 200px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.openclaw-realtime-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.openclaw-realtime-panel-header strong {
+  font-size: 11px;
+  color: var(--openclaw-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.openclaw-realtime-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: openclaw-pulse-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes openclaw-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+
+.openclaw-realtime-agent-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(102, 237, 255, 0.06);
+}
+
+.openclaw-realtime-agent-row:last-child {
+  border-bottom: none;
+}
+
+.openclaw-realtime-agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.openclaw-realtime-agent-dot.status-active { background: #10b981; box-shadow: 0 0 4px #10b981; }
+.openclaw-realtime-agent-dot.status-warm { background: #f59e0b; box-shadow: 0 0 4px #f59e0b; }
+.openclaw-realtime-agent-dot.status-idle { background: rgba(213, 233, 255, 0.4); }
+.openclaw-realtime-agent-dot.status-offline { background: rgba(213, 233, 255, 0.15); }
+
+.openclaw-realtime-agent-name {
+  font-size: 11px;
+  color: var(--openclaw-text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.openclaw-realtime-agent-task {
+  font-size: 10px;
+  color: var(--openclaw-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+/* ── Phase 4: Sidebar Quick Actions ── */
+.openclaw-sidebar-quick-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(102, 237, 255, 0.1);
+}
+
+.openclaw-sidebar-quick-title {
+  font-size: 10px;
+  color: var(--openclaw-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+.openclaw-sidebar-quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.openclaw-sidebar-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(102, 237, 255, 0.1);
+  background: rgba(7, 16, 39, 0.5);
+  color: var(--openclaw-text);
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.openclaw-sidebar-quick-btn:hover {
+  background: rgba(102, 237, 255, 0.08);
+  border-color: rgba(102, 237, 255, 0.3);
+}
+
+.openclaw-sidebar-quick-btn:active {
+  background: rgba(102, 237, 255, 0.14);
+}
+
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-glyph {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-glyph.status-active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-glyph.status-warm { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-glyph.status-idle { background: rgba(102, 237, 255, 0.1); color: var(--openclaw-cyan); }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-glyph.status-offline { background: rgba(213, 233, 255, 0.08); color: var(--openclaw-muted); }
+
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-status {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-status.status-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-btn.status-warm { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-status.status-idle { background: rgba(102, 237, 255, 0.08); color: var(--openclaw-cyan); }
+.openclaw-sidebar-quick-btn .openclaw-sidebar-quick-status.status-offline { background: rgba(213, 233, 255, 0.06); color: var(--openclaw-muted); }
+
+/* ── Phase 4: Cron Status Strip ── */
+.openclaw-cron-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(102, 237, 255, 0.1);
+  background: rgba(7, 16, 39, 0.5);
+  font-size: 11px;
+}
+
+.openclaw-cron-status-strip i.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.openclaw-cron-status-strip i.dot.running { background: #10b981; box-shadow: 0 0 5px #10b981; }
+.openclaw-cron-status-strip i.dot.waiting { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
+.openclaw-cron-status-strip i.dot.none { background: rgba(213, 233, 255, 0.2); }
+
+.openclaw-cron-status-strip span { color: var(--openclaw-muted); }
+.openclaw-cron-status-strip strong { color: var(--openclaw-text); }
+
+/* ── Phase 4: Better comm link pairs (centered) ── */
+.openclaw-commander-strip-links.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  justify-items: center;
+}
+
+.openclaw-commander-strip-link.centered {
+  justify-content: flex-end;
+}
+
+.openclaw-commander-strip-link.centered i {
+  order: -1;
+}
+
+/* ── Phase 4: Inline quick task input ── */
+.openclaw-quick-task-inline {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.openclaw-quick-task-inline input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(102, 237, 255, 0.18);
+  background: rgba(7, 16, 39, 0.7);
+  color: var(--openclaw-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.openclaw-quick-task-inline input::placeholder { color: var(--openclaw-muted); }
+
+.openclaw-quick-task-inline input:focus {
+  border-color: rgba(102, 237, 255, 0.4);
+  box-shadow: 0 0 8px rgba(102, 237, 255, 0.1);
+}
+
+/* ── Scrollbar ── */
+.openclaw-realtime-panel::-webkit-scrollbar {
+  width: 3px;
+}
+.openclaw-realtime-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.openclaw-realtime-panel::-webkit-scrollbar-thumb {
+  background: rgba(102, 237, 255, 0.2);
+  border-radius: 999px;
 }

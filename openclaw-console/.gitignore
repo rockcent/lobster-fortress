@@ -2,3 +2,5 @@ node_modules/
 dist/
 .tmp-server.log
 .DS_Store
+.data/
+.data/openclaw-store.json

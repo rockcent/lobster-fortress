@@ -2,30 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Bot, ChevronsLeft, ChevronsRight, FolderKanban, MessageSquare, RefreshCw, SendHorizontal, ShieldCheck, SquareTerminal, Stethoscope, Zap } from 'lucide-react';
 import './openclaw.css';
 import { OpenClawAction, OpenClawAgentModelSnapshot, OpenClawAgentRunRecord, OpenClawAgentStreamEvent, OpenClawCommandResult, OpenClawDashboard, OpenClawRuntimeAction, openclawService } from '../lib/openclawService';
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return '暂无';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-};
-
-const formatAge = (ageMs?: number | null) => {
-  if (ageMs === null || ageMs === undefined) return '暂无活动';
-  const minutes = Math.round(ageMs / 60000);
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes} 分钟前`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
-  const days = Math.round(hours / 24);
-  return `${days} 天前`;
-};
-
-const compactText = (value?: string | null, maxLength = 96) => {
-  const text = (value || '').replace(/\s+/g, ' ').trim();
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(8, maxLength - 1)).trim()}…`;
-};
+import { compactText, estimateTokenCount, explainModelDiagnosticFailure, formatAge, formatDateTime, formatJsonParseError, getFriendlyModelLabel, normalizeModelLabel, percentile, pickSnapshotModel, resolveModelFamily, seriesToPoints, textHash, tokenizeRecentUsage, clampSeries } from '../lib/utils';
+import { EMOJI_PRESETS, MODEL_DIAGNOSTIC_PROMPT, NATIVE_MODULES, PROMPT_VARIABLES, ROLE_PRESETS } from '../lib/constants';
 
 const toneLabel: Record<OpenClawDashboard['services'][number]['tone'], string> = {
   healthy: '运行正常',
@@ -48,58 +26,22 @@ const actionLabel: Record<OpenClawAction, string> = {
   status: '检查',
 };
 
+const serviceStatusLabel: Record<string, string> = {
+  running: '运行中',
+  stopped: '已停止',
+  stopped_waiting: '等待中',
+  running_waiting: '运行中',
+  exited: '已退出',
+  restarting: '重启中',
+  dead: '已终止',
+  created: '已创建',
+  removing: '移除中',
+  paused: '已暂停',
+};
+
 const summarizeOutput = (result: OpenClawCommandResult) => {
   const text = [result.stdout, result.stderr].filter(Boolean).join('\n');
-  return text.trim() || '(empty)';
-};
-
-const percentile = (values: number[], target: number) => {
-  if (!values.length) return null;
-  const sorted = [...values].sort((left, right) => left - right);
-  const index = Math.min(sorted.length - 1, Math.ceil((target / 100) * sorted.length) - 1);
-  return sorted[Math.max(index, 0)];
-};
-
-const tokenizeRecentUsage = (runs: OpenClawAgentRunRecord[], fallback: number | null) => {
-  const series = runs
-    .map((run) => run.usage.total)
-    .filter((value): value is number => typeof value === 'number' && value > 0)
-    .slice(0, 8)
-    .reverse();
-
-  if (!series.length && fallback && fallback > 0) {
-    return [fallback];
-  }
-
-  return series;
-};
-
-const clampSeries = (values: number[], limit = 16) => (
-  values
-    .filter((value) => Number.isFinite(value) && value >= 0)
-    .slice(-limit)
-);
-
-const seriesToPoints = (values: number[], width = 180, height = 44) => {
-  const series = clampSeries(values);
-  if (!series.length) return '';
-  const max = Math.max(...series, 1);
-  return series
-    .map((value, index) => {
-      const x = series.length === 1 ? 0 : Math.round((index / (series.length - 1)) * width);
-      const y = Math.round(height - ((value / max) * height));
-      return `${x},${y}`;
-    })
-    .join(' ');
-};
-
-const textHash = (value: string) => {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = ((hash << 5) - hash) + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
+  return text.trim() || '（空）';
 };
 
 const getAgentGlyph = (id: string, displayName: string, emoji?: string) => {
@@ -129,17 +71,6 @@ const getNickname = (agent: DashboardAgent) => {
 const getPreferredName = (agent: DashboardAgent) => {
   const nickname = getNickname(agent);
   return nickname === '未设置昵称' ? getRoleName(agent) : nickname;
-};
-
-const resolveModelFamily = (model?: string | null) => {
-  const value = (model || '').toLowerCase();
-  if (!value) return 'unknown';
-  if (value.includes('minimax')) return 'minimax';
-  if (value.includes('openai') || value.includes('gpt')) return 'openai';
-  if (value.includes('gemini')) return 'gemini';
-  if (value.includes('claude') || value.includes('anthropic')) return 'anthropic';
-  const [first] = value.split('/');
-  return first || 'unknown';
 };
 
 type AgentIdentityOverride = { roleName?: string; displayName?: string; emoji?: string };
@@ -196,110 +127,6 @@ type AgentModelDiagnosis = {
   checkedAt: string;
 };
 
-type AgentRolePreset = {
-  id: string;
-  label: string;
-  description: string;
-  profile: string;
-};
-
-const MODEL_DIAGNOSTIC_PROMPT = '链路诊断：请仅回复 OK。';
-const PROMPT_VARIABLES = [
-  { token: '{{CURRENT_TIME}}', label: '当前时间' },
-  { token: '{{USER_CLIPBOARD}}', label: '用户剪贴板' },
-  { token: '{{AGENT_ID}}', label: '助理 ID' },
-  { token: '{{SESSION_ID}}', label: '会话 ID' },
-];
-const ROLE_PRESETS: AgentRolePreset[] = [
-  {
-    id: 'xiaohongshu',
-    label: '小红书文案',
-    description: '适合内容助理',
-    profile: '你是小红书爆款文案写手。输出中文，先给标题备选，再给正文。语气有网感，但不夸张，不虚假承诺。',
-  },
-  {
-    id: 'code-reviewer',
-    label: '代码审查员',
-    description: '适合研发协作',
-    profile: '你是严格但友好的代码审查员。优先指出风险、回归点、缺失测试，再给可执行修复建议。输出结构清晰。',
-  },
-  {
-    id: 'ops-commander',
-    label: '运维值班官',
-    description: '适合监控排障',
-    profile: '你是运维值班助理。先给结论，再列风险等级和处理步骤。遇到异常要给可直接执行的命令和回滚方案。',
-  },
-];
-const EMOJI_PRESETS = ['🤖', '🦞', '🛠️', '📊', '🧠', '🧑‍💻', '📝', '🚀', '🧭', '🎯'];
-
-const normalizeModelLabel = (raw: string) => (
-  raw.includes('/') ? raw.split('/').at(-1) || raw : raw
-);
-
-const getFriendlyModelLabel = (raw: string, index: number) => {
-  const value = raw.toLowerCase();
-  if (value.includes('flash') || value.includes('lite') || value.includes('highspeed') || value.includes('fast')) {
-    return `快速响应型 ${index + 1}（适合日常聊天）`;
-  }
-  if (value.includes('reason') || value.includes('deep') || value.includes('o1') || value.includes('think')) {
-    return `深度思考型 ${index + 1}（适合复杂任务）`;
-  }
-  return `通用平衡型 ${index + 1}（适合多数任务）`;
-};
-
-const estimateTokenCount = (value: string) => {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (!normalized) return 0;
-  return Math.max(1, Math.ceil(normalized.length / 4));
-};
-
-const formatJsonParseError = (raw: string, error: unknown) => {
-  const fallback = error instanceof Error ? error.message : 'JSON 解析失败。';
-  if (!(error instanceof Error)) return fallback;
-  const match = error.message.match(/position\s+(\d+)/i);
-  if (!match) return error.message;
-  const position = Number(match[1]);
-  if (!Number.isFinite(position) || position < 0) return error.message;
-  const snippet = raw.slice(0, position);
-  const line = snippet.split(/\r?\n/).length;
-  const lastBreak = Math.max(snippet.lastIndexOf('\n'), snippet.lastIndexOf('\r'));
-  const column = position - (lastBreak + 1) + 1;
-  return `${error.message}（第 ${line} 行，第 ${column} 列）`;
-};
-
-const explainModelDiagnosticFailure = (message: string) => {
-  const text = message.toLowerCase();
-  if (text.includes('api route not found') || text.includes('not_found') || text.includes('404')) {
-    return '控制台 API 路由未就绪，请重启 openclaw-console 后重试。';
-  }
-  if (text.includes('401') || text.includes('invalid api key') || text.includes('unauthorized')) {
-    return '模型提供方鉴权失败，请检查 API Key / Secret。';
-  }
-  if (text.includes('403') || text.includes('forbidden') || text.includes('permission')) {
-    return '当前账号没有该模型权限，请更换模型或提升权限。';
-  }
-  if (text.includes('429') || text.includes('quota') || text.includes('rate limit')) {
-    return '调用被限流或额度不足，请检查套餐额度与并发限制。';
-  }
-  if (text.includes('timeout') || text.includes('timed out') || text.includes('network')) {
-    return '链路超时或网络不可达，请检查网关到模型提供方的网络连通性。';
-  }
-  if (text.includes('model') && text.includes('not found')) {
-    return '当前模型标识不存在，请刷新模型列表并校对标签覆盖。';
-  }
-  return '链路探测失败，请检查模型配置、网关日志与提供方状态。';
-};
-
-const pickSnapshotModel = (snapshot?: OpenClawAgentModelSnapshot | null) => {
-  if (!snapshot) return '';
-  return snapshot.effectiveModel
-    || snapshot.consoleOverrideModel
-    || snapshot.resolvedDefault
-    || snapshot.defaultModel
-    || snapshot.models[0]?.key
-    || '';
-};
-
 export const OpenClawApp: React.FC = () => {
   const [dashboard, setDashboard] = useState<OpenClawDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -324,7 +151,8 @@ export const OpenClawApp: React.FC = () => {
   const [agentModelLoading, setAgentModelLoading] = useState(false);
   const [agentModelSwitching, setAgentModelSwitching] = useState(false);
   const [agentModelSelection, setAgentModelSelection] = useState('');
-  const [activeSection, setActiveSection] = useState<'overview' | 'agents' | 'services' | 'logs' | 'native' | 'sessions'>('agents');
+  const [cronJobs, setCronJobs] = useState<Record<string, any>[]>([]);
+  const [activeSection, setActiveSection] = useState<'overview' | 'agents' | 'services' | 'logs' | 'native' | 'sessions'>('overview');
   const [expandedDiagnostics, setExpandedDiagnostics] = useState<string[]>([]);
   const [highlightedServiceId, setHighlightedServiceId] = useState<string>('');
   const [runningRuntimeAction, setRunningRuntimeAction] = useState<OpenClawRuntimeAction | null>(null);
@@ -388,24 +216,16 @@ export const OpenClawApp: React.FC = () => {
   const [configSandboxLoading, setConfigSandboxLoading] = useState(false);
   const [configSandboxStartedAt, setConfigSandboxStartedAt] = useState<string | null>(null);
   const [configSandboxLastRun, setConfigSandboxLastRun] = useState<OpenClawAgentRunRecord | null>(null);
+  const [upgradeStatusOpen, setUpgradeStatusOpen] = useState(false);
+  const [upgradeStatusData, setUpgradeStatusData] = useState<{currentVersion: string; targetVersion: string; upToDate: boolean; channel: string} | null>(null);
+  const [upgradeStatusLoading, setUpgradeStatusLoading] = useState(false);
+  // Phase 4: Quick task dispatch state
+  const [quickTaskInput, setQuickTaskInput] = useState('');
+  const [quickTaskTarget, setQuickTaskTarget] = useState<string>('');
   const agentDefaultTemplateRef = useRef<HTMLTextAreaElement | null>(null);
   const agentPromptPrefixRef = useRef<HTMLTextAreaElement | null>(null);
   const agentPromptSuffixRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const nativeModules = [
-    { id: 'chat', label: '聊天', path: '/native-control/chat', withSession: true },
-    { id: 'overview', label: '总览', path: '/native-control/overview' },
-    { id: 'channels', label: '渠道', path: '/native-control/channels' },
-    { id: 'instances', label: '实例', path: '/native-control/instances' },
-    { id: 'sessions', label: '会话', path: '/native-control/sessions' },
-    { id: 'usage', label: '用量', path: '/native-control/usage' },
-    { id: 'cron', label: '定时任务', path: '/native-control/cron' },
-    { id: 'skills', label: '技能', path: '/native-control/skills' },
-    { id: 'nodes', label: '节点', path: '/native-control/nodes' },
-    { id: 'config', label: '配置', path: '/native-control/config' },
-    { id: 'debug', label: '调试', path: '/native-control/debug' },
-    { id: 'logs', label: '日志', path: '/native-control/logs' },
-  ] as const;
+  const isMounted = useRef(false);
 
   const loadDashboard = async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -470,6 +290,20 @@ export const OpenClawApp: React.FC = () => {
   }, [dashboard?.refreshIntervalMs]);
 
   useEffect(() => {
+    fetch('/api/openclaw/cron-jobs-list')
+      .then((r) => r.json())
+      .then((d) => setCronJobs(d.data || []))
+      .catch(() => setCronJobs([]));
+  }, []);
+
+  // Auto-dismiss generic error after 8 seconds so it doesn't persist forever
+  useEffect(() => {
+    if (!error) return undefined;
+    const timer = window.setTimeout(() => setError(''), 8000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
     if (!dashboard?.agents.length) return;
     if (selectedAgentId && dashboard.agents.some((agent) => agent.id === selectedAgentId)) return;
     setSelectedAgentId(dashboard.agents[0].id);
@@ -525,6 +359,7 @@ export const OpenClawApp: React.FC = () => {
   }, [activeSection]);
 
   useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
     if (activeSection === 'agents') return;
     setActiveSection('agents');
   }, [activeSection]);
@@ -730,7 +565,7 @@ export const OpenClawApp: React.FC = () => {
       id: 'gateway',
       title: '网关端口',
       value: dashboard.runtime.gatewayListening ? `127.0.0.1:${dashboard.runtime.gatewayPort}` : '离线',
-      meta: `${dashboard.runtime.connectionMode.toUpperCase()} · ${dashboard.runtime.connectionTarget}`,
+      meta: `${dashboard.runtime.connectionMode === 'local' ? '本地' : 'SSH'} · ${dashboard.runtime.connectionTarget}`,
       ok: dashboard.runtime.gatewayListening,
     },
     {
@@ -751,7 +586,7 @@ export const OpenClawApp: React.FC = () => {
       id: 'state',
       title: '状态目录',
       value: dashboard.runtime.stateDirectory,
-      meta: `Updated ${formatDateTime(dashboard.panels.find((panel) => panel.id === 'workspace')?.lastModifiedAt)}`,
+      meta: `更新于 ${formatDateTime(dashboard.panels.find((panel) => panel.id === 'workspace')?.lastModifiedAt)}`,
       ok: true,
     },
   ] : [];
@@ -834,6 +669,17 @@ export const OpenClawApp: React.FC = () => {
     }
     return map;
   }, [dashboard?.agentRuns, lastAgentRun]);
+
+  const cronJobsByAgent = useMemo(() => {
+    const map = new Map<string, Record<string, any>[]>();
+    cronJobs.forEach((job) => {
+      const aid = job.agentId || 'unknown';
+      if (!map.has(aid)) map.set(aid, []);
+      map.get(aid)!.push(job);
+    });
+    return map;
+  }, [cronJobs]);
+
   const getAgentPreference = (agentId: string): AgentConsolePreference => (
     agentConsolePreferences[agentId] || {}
   );
@@ -870,7 +716,7 @@ export const OpenClawApp: React.FC = () => {
   };
   const selectedAgentEffective = selectedAgent ? getAgentEffectiveMeta(selectedAgent) : null;
   const getNativeModuleUrl = (moduleId: string) => {
-    const module = nativeModules.find((item) => item.id === moduleId) || nativeModules[0];
+    const module = NATIVE_MODULES.find((item) => item.id === moduleId) || NATIVE_MODULES[0];
     if (!module) return '/native-control/';
     return module.withSession
       ? `${module.path}?session=${encodeURIComponent(selectedAgentId || 'main')}`
@@ -1028,6 +874,7 @@ export const OpenClawApp: React.FC = () => {
 
     const activeChain = [...agents]
       .filter((agent) => agent.status === 'active' || agent.status === 'warm')
+      .filter((agent) => agent.id !== 'main' && agent.id !== 'brand-cjd')
       .sort((left, right) => (left.latestAgeMs ?? Number.MAX_SAFE_INTEGER) - (right.latestAgeMs ?? Number.MAX_SAFE_INTEGER))
       .slice(0, 5);
 
@@ -1286,6 +1133,21 @@ export const OpenClawApp: React.FC = () => {
     }
   };
 
+  const handleCheckUpgradeStatus = async () => {
+    setUpgradeStatusOpen(true);
+    if (upgradeStatusData) return; // already loaded
+    setUpgradeStatusLoading(true);
+    try {
+      const res = await fetch('/api/openclaw/upgrade-status');
+      const data = await res.json();
+      setUpgradeStatusData(data.data || null);
+    } catch {
+      setUpgradeStatusData(null);
+    } finally {
+      setUpgradeStatusLoading(false);
+    }
+  };
+
   const handleShortcut = async (kind: 'url' | 'path', target: string) => {
     try {
       await openclawService.runShortcut(kind, target);
@@ -1423,7 +1285,8 @@ export const OpenClawApp: React.FC = () => {
       const allowSessionReuse = reuseLatestSession && Boolean(selectedAgent.latestSessionId)
         && (selectedAgent.id === 'main' || sessionIsFresh);
       const withSessionId = allowSessionReuse ? selectedAgent.latestSessionId || undefined : undefined;
-      let run: OpenClawAgentRunRecord;
+      let run: OpenClawAgentRunRecord | undefined;
+      let usedFallback = false;
       try {
         run = await openclawService.runAgentStream({
           ...baseInput,
@@ -1440,13 +1303,21 @@ export const OpenClawApp: React.FC = () => {
             const retryMessage = retryError instanceof Error ? retryError.message : '重试失败。';
             setStreamingError(`流式重试失败，切换普通模式执行：${retryMessage}`);
             run = await openclawService.runAgent(baseInput);
+            usedFallback = true;
           }
         } else {
           setStreamingError(`流式执行异常，切换普通模式执行：${streamMessage}`);
           run = await openclawService.runAgent(baseInput);
+          usedFallback = true;
         }
       }
-      setLastAgentRun(run);
+      if (run) {
+        setLastAgentRun(run);
+        if (usedFallback) {
+          // Non-streaming fallback: show the reply since streamingReply won't update
+          setStreamingReply(run.reply || run.summary || '');
+        }
+      }
       setCommandMessage('');
       setStreamingReply('');
       setStreamingStartedAt(null);
@@ -1705,9 +1576,220 @@ export const OpenClawApp: React.FC = () => {
               </article>
             ))}
           </div>
+
+          {/* ── Commander Header Strip ── */}
+          <div className="openclaw-commander-strip">
+            {/* KPI cluster with SVG gauge */}
+            <div className="openclaw-commander-strip-kpis">
+              {/* Sync rate with arc gauge */}
+              <div className={`openclaw-commander-strip-kpi has-gauge ${commanderInsights.syncRate >= 50 ? 'tone-healthy' : commanderInsights.syncRate >= 20 ? 'tone-warning' : 'tone-critical'}`}>
+                <svg className="openclaw-gauge-ring" viewBox="0 0 28 28" aria-hidden="true">
+                  <circle className="track" cx="14" cy="14" r="10" />
+                  <circle
+                    className={`fill ${commanderInsights.syncRate >= 50 ? 'tone-healthy' : commanderInsights.syncRate >= 20 ? 'tone-warning' : 'tone-critical'}`}
+                    cx="14" cy="14" r="10"
+                    strokeDasharray={`${2 * Math.PI * 10}`}
+                    strokeDashoffset={`${2 * Math.PI * 10 * (1 - commanderInsights.syncRate / 100)}`}
+                  />
+                </svg>
+                <span>同步率</span>
+                <strong>{commanderInsights.syncRate}%</strong>
+              </div>
+              <div className="openclaw-commander-strip-divider" />
+              <div className="openclaw-commander-strip-kpi tone-healthy">
+                <span>在线联动</span>
+                <strong>{commanderInsights.commLinks.length}</strong>
+              </div>
+              <div className="openclaw-commander-strip-divider" />
+              <div className="openclaw-commander-strip-kpi tone-healthy">
+                <span>同步助理</span>
+                <strong>{commanderInsights.syncedAgents}/{commanderInsights.totalAgents || 0}</strong>
+              </div>
+              <div className="openclaw-commander-strip-divider" />
+              <div className="openclaw-commander-strip-kpi">
+                <span>24h Token</span>
+                <strong>{commanderInsights.totalToken24h ? commanderInsights.totalToken24h.toLocaleString() : '--'}</strong>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="openclaw-commander-strip-charts">
+              <div className="openclaw-commander-strip-chart">
+                <span>Token 曲线（24h）</span>
+                <svg viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline points={seriesToPoints(commanderInsights.tokenBuckets, 120, 32)} />
+                </svg>
+              </div>
+              <div className="openclaw-commander-strip-chart pink">
+                <span>延迟趋势（24h）</span>
+                <svg viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline points={seriesToPoints(commanderInsights.latencyTrend, 120, 32)} />
+                </svg>
+              </div>
+            </div>
+
+            {/* Comm links - two-column pairs */}
+            <div className="openclaw-commander-strip-links two-col">
+              {commanderInsights.commLinks.length ? commanderInsights.commLinks.map((link, index) => (
+                <div key={link.id} className={`openclaw-commander-strip-link ${index % 2 === 1 ? 'centered' : ''}`}>
+                  <span>{link.from}</span>
+                  <i />
+                  <strong>{link.to}</strong>
+                </div>
+              )) : (
+                <div className="openclaw-commander-strip-link">
+                  <span style={{ color: 'var(--openclaw-muted)', fontSize: 12 }}>暂无活跃联动链路</span>
+                </div>
+              )}
+            </div>
+
+            {/* Phase 4: Real-time agent status + Cron strip */}
+            <div className="openclaw-realtime-panel">
+              <div className="openclaw-realtime-panel-header">
+                <strong>实时状态</strong>
+                <i className="openclaw-realtime-pulse" />
+              </div>
+              {(dashboard?.agents || []).slice(0, 6).map((agent) => {
+                const latestRun = latestRunByAgent.get(agent.id);
+                const taskPreview = compactText(latestRun?.message || '空闲', 20);
+                return (
+                  <div key={`rt-${agent.id}`} className="openclaw-realtime-agent-row">
+                    <i className={`openclaw-realtime-agent-dot status-${agent.status}`} />
+                    <span className="openclaw-realtime-agent-name" title={agent.id}>
+                      {agent.emoji ? `${agent.emoji} ${getPreferredName(agent)}` : getPreferredName(agent)}
+                    </span>
+                    <span className="openclaw-realtime-agent-task">{taskPreview}</span>
+                  </div>
+                );
+              })}
+              {/* Cron status strip */}
+              {(() => {
+                const runningCrons = cronJobs.filter((j: any) => j.enabled && j.nextRunAtMs && j.nextRunAtMs > Date.now());
+                const pendingCronCount = runningCrons.length;
+                return (
+                  <div className="openclaw-cron-status-strip">
+                    <i className={`dot ${pendingCronCount > 0 ? 'running' : 'none'}`} />
+                    <span>Cron</span>
+                    <strong>{pendingCronCount} 个待执行</strong>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Phase 4: Quick task inline dispatch bar */}
+          <div className="openclaw-quick-task-inline">
+            <input
+              type="text"
+              placeholder="快速派发任务…"
+              value={quickTaskInput}
+              onChange={(e) => setQuickTaskInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && quickTaskInput.trim() && quickTaskTarget) {
+                  openStudioForAgent(quickTaskTarget, quickTaskInput.trim());
+                  setQuickTaskInput('');
+                }
+              }}
+            />
+            <select
+              className="openclaw-input"
+              style={{ width: 120, fontSize: 12, padding: '4px 8px' }}
+              value={quickTaskTarget}
+              onChange={(e) => setQuickTaskTarget(e.target.value)}
+            >
+              <option value="">选择助理</option>
+              {(dashboard?.agents || []).map((agent) => (
+                <option key={`qt-${agent.id}`} value={agent.id}>
+                  {agent.emoji ? `${agent.emoji} ${getPreferredName(agent)}` : getPreferredName(agent)}
+                </option>
+              ))}
+            </select>
+            <button
+              className="openclaw-primary-btn"
+              style={{ fontSize: 12, padding: '4px 12px' }}
+              disabled={!quickTaskInput.trim() || !quickTaskTarget}
+              onClick={() => {
+                if (quickTaskInput.trim() && quickTaskTarget) {
+                  openStudioForAgent(quickTaskTarget, quickTaskInput.trim());
+                  setQuickTaskInput('');
+                }
+              }}
+            >
+              派发
+            </button>
+          </div>
+
+          {/* Always-visible action buttons */}
+          <div className="openclaw-hero-action-buttons">
+            <button
+              className="openclaw-action-btn"
+              onClick={() => handleRuntimeAction('repair-watchdog')}
+              disabled={runningRuntimeAction === 'repair-watchdog'}
+              title="修复 Watchdog 守护进程"
+            >
+              {runningRuntimeAction === 'repair-watchdog' ? '修复中…' : '🔧 修复系统'}
+            </button>
+            <button
+              className="openclaw-action-btn"
+              onClick={() => {
+                if (!gatewayRestarting && dashboard?.runtime.gatewayListening) {
+                  setGatewayRestarting(true);
+                  openclawService.runAction('openclaw-gateway', 'restart').finally(() => {
+                    setGatewayRestarting(false);
+                    loadDashboard(false);
+                  });
+                }
+              }}
+              disabled={gatewayRestarting || !dashboard?.runtime.gatewayListening}
+              title="重启 OpenClaw Gateway"
+            >
+              {gatewayRestarting ? '重启中…' : '🔄 重启网关'}
+            </button>
+            <button
+              className="openclaw-action-btn"
+              onClick={handleCheckUpgradeStatus}
+              title="检查 OpenClaw 更新"
+            >
+              ⬆️ 升级系统
+            </button>
+          </div>
         </section>
 
         {error ? <section className="openclaw-error">{error}</section> : null}
+
+        {upgradeStatusOpen ? (
+          <section className="openclaw-agent-dialog-backdrop" onClick={() => setUpgradeStatusOpen(false)}>
+            <div className="openclaw-agent-dialog" role="dialog" aria-modal="true" aria-label="升级检查" onClick={(e) => e.stopPropagation()}>
+              <div className="openclaw-agent-dialog-head">
+                <div>
+                  <p className="openclaw-section-kicker"><Zap size={16} /> 系统升级</p>
+                  <h2>OpenClaw 升级检查</h2>
+                </div>
+                <button type="button" className="openclaw-inline-toggle" onClick={() => setUpgradeStatusOpen(false)}>关闭</button>
+              </div>
+              {upgradeStatusLoading ? (
+                <p style={{ color: 'var(--openclaw-muted)', padding: '16px 0' }}>正在检查升级状态...</p>
+              ) : upgradeStatusData ? (
+                <div className="openclaw-channel-assist">
+                  <div className={`openclaw-channel-assist-card ${upgradeStatusData.upToDate ? 'is-ok' : 'is-warning'}`}>
+                    <small>当前版本</small>
+                    <strong>{upgradeStatusData.currentVersion}</strong>
+                  </div>
+                  <div className="openclaw-channel-assist-card is-ok">
+                    <small>目标版本</small>
+                    <strong>{upgradeStatusData.targetVersion}</strong>
+                  </div>
+                  <div className={`openclaw-channel-assist-card ${upgradeStatusData.upToDate ? 'is-ok' : 'is-warning'}`}>
+                    <small>升级通道</small>
+                    <strong>{upgradeStatusData.channel}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--openclaw-muted)', padding: '16px 0' }}>无法获取升级状态，请检查 openclaw update 命令是否可用。</p>
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <section className="openclaw-dashboard-shell">
           <aside
@@ -1765,9 +1847,42 @@ export const OpenClawApp: React.FC = () => {
                 );
               })}
             </nav>
+
+            {/* Phase 4: Quick action shortcuts for each agent in sidebar */}
+            {!sidebarCollapsed ? (
+              <div className="openclaw-sidebar-quick-section">
+                <p className="openclaw-sidebar-quick-title">快捷派发</p>
+                <div className="openclaw-sidebar-quick-list">
+                  {(dashboard?.agents || []).slice(0, 8).map((agent) => {
+                    const effective = getAgentEffectiveMeta(agent);
+                    return (
+                      <button
+                        key={`qa-${agent.id}`}
+                        type="button"
+                        className="openclaw-sidebar-quick-btn"
+                        onClick={() => openStudioForAgent(agent.id)}
+                        disabled={effective.disabled}
+                        title={`向 ${getPreferredName(agent)} 派发任务`}
+                      >
+                        <span
+                          className={`openclaw-sidebar-quick-glyph status-${agent.status}`}
+                        >
+                          {agent.emoji || getAgentGlyph(agent.id, agent.displayName || '', undefined)}
+                        </span>
+                        <span className="openclaw-sidebar-quick-label">{getPreferredName(agent)}</span>
+                        <span className={`openclaw-sidebar-quick-status status-${agent.status}`}>
+                          {agentStatusLabel[agent.status]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </aside>
           <div className="openclaw-main-content">
-            {!isAgentFocusedView ? <section className="openclaw-stat-grid">
+            {!isAgentFocusedView ? <>
+              <section className="openclaw-stat-grid">
               <article className={`openclaw-stat-card tone-${statCardTones.agents}`}>
                 <span>助理数</span>
                 <strong>{dashboard?.agents.length || 0}</strong>
@@ -1825,7 +1940,9 @@ export const OpenClawApp: React.FC = () => {
                   <small className="openclaw-version-tag">OpenClaw {dashboard.environment.openclawVersion}</small>
                 ) : null}
               </article>
-            </section> : null}
+            </section>
+            </>
+            : null}
 
             {!isAgentFocusedView ? <section className="openclaw-section openclaw-command-bridge">
               <div className="openclaw-section-head">
@@ -2195,45 +2312,31 @@ export const OpenClawApp: React.FC = () => {
                             <strong className={`openclaw-agent-latency-value tone-${latencyToneClass}`}>{analytics?.latencyP99 ? `${analytics.latencyP99}ms` : '--'}</strong>
                           </div>
                         </div>
-                        {hasWaveData ? (
-                          <div className="openclaw-token-chart openclaw-wave-chart">
-                            {hasLatencyWave ? (
-                              <div className={`openclaw-wave-panel ${latencyAlert ? 'is-alert' : ''}`}>
-                                <span>P99 延迟波形</span>
-                                <svg viewBox="0 0 180 44" preserveAspectRatio="none" aria-hidden="true">
-                                  <polyline points={seriesToPoints(latencySeries)} />
-                                </svg>
-                                <small>{analytics?.latencyP99 ? `${analytics.latencyP99}ms` : '--'}</small>
-                              </div>
-                            ) : (
-                              <div className="openclaw-wave-panel is-empty">
-                                <span>P99 延迟波形</span>
-                                <small>暂无波形数据</small>
-                              </div>
-                            )}
-                            {hasTokenWave ? (
-                              <div className="openclaw-wave-panel">
-                                <span>24h Token 波形</span>
-                                <svg viewBox="0 0 180 44" preserveAspectRatio="none" aria-hidden="true">
-                                  <polyline points={seriesToPoints(tokenSeries)} />
-                                </svg>
-                                <small>{agent.latestTokens ?? '--'} / {analytics?.runCount24h ?? 0} 次</small>
-                              </div>
-                            ) : (
-                              <div className="openclaw-wave-panel is-empty">
-                                <span>24h Token 波形</span>
-                                <small>暂无波形数据</small>
-                              </div>
-                            )}
+                        <div className="openclaw-agent-task-section">
+                          <div className="openclaw-agent-task-current">
+                            <span>🕐 正在执行 / 最近任务</span>
+                            <strong title={latestRun?.message}>{compactText(latestRun?.message || '暂无执行记录', 120) || '暂无执行记录'}</strong>
                           </div>
-                        ) : (
-                          <div className="openclaw-wave-empty">暂无波形数据</div>
-                        )}
-                        <div className="openclaw-agent-run-preview is-teletype">
-                          <span>最近回复</span>
-                          <div className="openclaw-teletype-window">
-                            <strong>{latestReplyPreview}</strong>
-                          </div>
+                          {(() => {
+                            const jobs = cronJobsByAgent.get(agent.id) || [];
+                            const pending = jobs.filter((j: any) => j.enabled && j.nextRunAtMs && j.nextRunAtMs > Date.now());
+                            const upcoming = pending.slice(0, 5);
+                            if (!upcoming.length) return null;
+                            return (
+                              <div className="openclaw-agent-task-queue">
+                                <span>📋 待执行任务队列（{pending.length} 条）</span>
+                                {upcoming.map((job: any) => (
+                                  <div key={job.id} className="openclaw-agent-task-queue-item">
+                                    <strong>{compactText(job.name || job.id, 30)}</strong>
+                                    <small>{job.schedule}</small>
+                                  </div>
+                                ))}
+                                {pending.length > 5 ? (
+                                  <small className="openclaw-agent-task-queue-more">还有 {pending.length - 5} 条任务…</small>
+                                ) : null}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="openclaw-agent-meta-inline">
                           <span title={latestSession}>会话：{compactText(latestSession, 28) || '--'}</span>
@@ -2792,7 +2895,7 @@ export const OpenClawApp: React.FC = () => {
                         {configSandboxLastRun ? (
                           <div className="openclaw-meta">
                             <span>{configSandboxLastRun.model || '未知模型'} · {configSandboxLastRun.provider || '未知提供方'}</span>
-                            <span>{configSandboxLastRun.durationMs ?? '--'}ms · 总计 {configSandboxLastRun.usage.total ?? '--'} tokens</span>
+                            <span>{configSandboxLastRun.durationMs ?? '--'}ms · 总计 {configSandboxLastRun.usage.total ?? '--'} Token</span>
                           </div>
                         ) : null}
                       </div>
@@ -3012,7 +3115,7 @@ export const OpenClawApp: React.FC = () => {
                             <pre className="openclaw-log-box">{run.reply || '（空回复）'}</pre>
                             <div className="openclaw-meta">
                               <span>{run.model || '未知模型'} · {run.provider || '未知提供方'}</span>
-                              <span>{run.durationMs ?? '--'}ms · 总计 {run.usage.total ?? '--'} tokens</span>
+                              <span>{run.durationMs ?? '--'}ms · 总计 {run.usage.total ?? '--'} Token</span>
                             </div>
                           </div>
                         ))}
@@ -3043,7 +3146,7 @@ export const OpenClawApp: React.FC = () => {
                             <p>{service.name}</p>
                             <h3>{toneLabel[service.tone]}</h3>
                           </div>
-                          <span className="openclaw-status-pill">{service.status}</span>
+                          <span className="openclaw-status-pill">{serviceStatusLabel[service.status] || service.status}</span>
                         </header>
                         <p className="openclaw-service-desc">{service.description}</p>
                         <div className="openclaw-metrics">
@@ -3280,7 +3383,7 @@ export const OpenClawApp: React.FC = () => {
                   <p className="openclaw-native-current">选择原生模块后将直接跳转，不再通过 iframe 内嵌。</p>
                 </div>
                 <div className="openclaw-native-module-tabs">
-                  {nativeModules.map((module) => (
+                  {NATIVE_MODULES.map((module) => (
                     <button
                       key={`native-tab-${module.id}`}
                       type="button"

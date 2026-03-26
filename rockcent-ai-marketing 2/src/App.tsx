@@ -1,0 +1,3790 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Paperclip, Link as LinkIcon, Bot, User, Loader2, Globe, Zap, Database, Search, ArrowRight, LogOut, Sparkles, Building2, X, ChevronRight, Plus, ShieldCheck, CheckCircle2, Calendar, FileText, TrendingUp, RefreshCw, Shield, Crown, Coins, Lock, ExternalLink, Settings2, Network, Users, Gift, Activity, Share2, Tent, Car, Coffee, Beer, Heart, MessageCircle } from 'lucide-react';
+import { Message, StructuredNeed, MatchmakingSuggestion } from './types';
+import { extractMarketingNeeds, generateMatchmaking, chatWithAI, refineMatchmakingPlan, generatePitchDeck, generateMoU, generateTimeline, simulateBDNegotiation } from './services/ai';
+import ReactMarkdown from 'react-markdown';
+import { cn } from './lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Treemap, Legend } from 'recharts';
+
+// --- Logo Component ---
+const Logo = ({ className = "h-10 w-auto", variant = 'light' }: { className?: string, variant?: 'light' | 'dark' }) => {
+  const maskId = React.useId();
+  const textColor = variant === 'dark' ? '#FFFFFF' : '#18181B';
+  const subTextColor = variant === 'dark' ? '#A1A1AA' : '#71717A';
+
+  return (
+    <svg viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} style={{ filter: variant === 'dark' ? 'drop-shadow(0px 4px 20px rgba(244, 63, 94, 0.2))' : 'none' }}>
+      <defs>
+        <mask id={maskId}>
+          <rect width="100%" height="100%" fill="white" />
+          <rect x="16" y="20" width="18" height="18" rx="8" fill="black" />
+        </mask>
+      </defs>
+      <g transform="translate(10, 5)">
+        <g mask={`url(#${maskId})`}>
+          {/* Violet shape */}
+          <rect x="0" y="4" width="34" height="34" rx="10" fill="url(#violet-grad)" />
+          <path d="M0 14 C0 8.477 4.477 4 10 4 L34 4 L34 38 L10 38 C4.477 38 0 33.523 0 28 L0 14 Z" fill="#7C3AED" opacity="0.8" style={{ mixBlendMode: 'overlay' }} />
+          
+          {/* Rose shape */}
+          <rect x="16" y="20" width="44" height="44" rx="12" fill="url(#rose-grad)" />
+          <path d="M16 32 C16 25.373 21.373 20 28 20 L60 20 L60 64 L28 64 C21.373 64 16 58.627 16 52 L16 32 Z" fill="#E11D48" opacity="0.7" style={{ mixBlendMode: 'overlay' }} />
+        </g>
+        
+        {/* Amber circle */}
+        <circle cx="46" cy="8" r="9" fill="#F59E0B" style={{ mixBlendMode: 'screen' }} />
+      </g>
+      <text x="82" y="48" fontFamily="system-ui, -apple-system, sans-serif" fontSize="42" fontWeight="900" fill={textColor} letterSpacing="2">Rockcent</text>
+      <text x="84" y="72" fontFamily="system-ui, -apple-system, sans-serif" fontSize="15" fill={subTextColor} letterSpacing="4">AI Marketing Cloud</text>
+      <defs>
+        <linearGradient id="violet-grad" x1="0" y1="4" x2="34" y2="38" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#6D28D9" />
+        </linearGradient>
+        <linearGradient id="rose-grad" x1="16" y1="20" x2="60" y2="64" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F43F5E" />
+          <stop offset="1" stopColor="#BE123C" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
+// --- Login Screen Component ---
+function LoginScreen({ onLogin }: { onLogin: (name: string) => void }) {
+  const [company, setCompany] = useState('');
+  const [email, setEmail] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (company.trim()) {
+      setIsGenerating(true);
+      setTimeout(() => {
+        setIsGenerating(false);
+        onLogin(company);
+      }, 2500); // Simulate AI generation
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-zinc-950 font-sans selection:bg-rose-500/30">
+      {/* Left Hero - Marketing Copy */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 lg:flex bg-[#0A0A0B]">
+        {/* Atmospheric Background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-luminosity" />
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/30 via-rose-500/20 to-orange-500/20 mix-blend-overlay" />
+        <div className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-violet-500/40 blur-[120px]" />
+        <div className="absolute -bottom-1/4 -right-1/4 h-1/2 w-1/2 rounded-full bg-rose-500/40 blur-[120px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-transparent to-transparent" />
+        
+        <div className="relative z-10 flex items-center gap-3 text-white">
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
+            <Logo className="h-12 w-auto" variant="dark" />
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl font-bold leading-[1.2] tracking-tighter text-white"
+          >
+            每一个品牌都应该有<br />
+            <span className="bg-gradient-to-r from-rose-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+              自己的朋友圈
+            </span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-6 max-w-md text-lg text-zinc-400"
+          >
+            Rockcent AI 跨界营销云 —— 通过自然语言交互，精准识别营销需求，构建资源库，一键生成跨界撮合与营销策略。
+          </motion.p>
+        </div>
+
+        <div className="relative z-10 text-sm text-zinc-500">
+          &copy; 2026 Rockcent. All rights reserved.
+        </div>
+      </div>
+
+      {/* Right Form - Registration/Login */}
+      <div className="flex w-full flex-col justify-center bg-white px-8 py-12 lg:w-1/2 lg:px-24 z-20 relative">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-4xl font-bold tracking-tight text-zinc-900 mb-3">商户入驻</h2>
+            <p className="text-[15px] text-zinc-500">简单注册，立即开启您的智能营销之旅</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-700">公司/品牌名称</label>
+                <input
+                  type="text"
+                  required
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-5 py-4 text-[15px] text-zinc-900 transition-all focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10 hover:border-zinc-300"
+                  placeholder="例如：星巴克中国"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-700">联系邮箱/手机号</label>
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-5 py-4 text-[15px] text-zinc-900 transition-all focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10 hover:border-zinc-300"
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-700">登录密码</label>
+                <input
+                  type="password"
+                  required
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-5 py-4 text-[15px] text-zinc-900 transition-all focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10 hover:border-zinc-300"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isGenerating}
+              className="group relative w-full overflow-hidden rounded-2xl bg-zinc-900 px-4 py-4 text-[15px] font-semibold text-white transition-all hover:bg-zinc-800 hover:shadow-xl hover:shadow-zinc-900/20 active:scale-[0.98] mt-4 disabled:opacity-80 disabled:cursor-not-allowed"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    AI 正在生成品牌画像...
+                  </>
+                ) : (
+                  <>
+                    进入营销工作台
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
+              </span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Onboarding Wizard Component ---
+function OnboardingWizard({ isOpen, onClose, companyName, onComplete }: { isOpen: boolean; onClose: () => void; companyName: string; onComplete: (persona: string, budget: number) => void }) {
+  const [step, setStep] = useState(1);
+  const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
+  const [budget, setBudget] = useState(50000);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+
+  const personas = [
+    {
+      id: 'expert',
+      title: '沉稳内敛的行业专家',
+      description: '用数据和专业术语说话，强调 ROI 和长期品牌价值。',
+      icon: Briefcase,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+      border: 'border-blue-200'
+    },
+    {
+      id: 'trendsetter',
+      title: '活泼网感的潮流制造者',
+      description: '熟练使用网络热梗，强调话题性、Z世代吸引力和短期爆发。',
+      icon: Zap,
+      color: 'text-rose-600',
+      bg: 'bg-rose-50',
+      border: 'border-rose-200'
+    }
+  ];
+
+  useEffect(() => {
+    if (step === 3) {
+      setIsScanning(true);
+      const timer = setTimeout(() => {
+        setIsScanning(false);
+        setScanComplete(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
+        <button onClick={onClose} className="absolute right-6 top-6 text-zinc-400 hover:text-zinc-600 z-10 transition-colors">
+          <X className="h-5 w-5" />
+        </button>
+        
+        <div className="p-10 pt-12">
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex flex-col"
+              >
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-zinc-900 text-white font-bold text-2xl flex items-center justify-center rounded-2xl mx-auto mb-4 shadow-xl">
+                    {companyName.slice(0, 2)}
+                  </div>
+                  <h3 className="text-2xl font-bold text-zinc-900 mb-2">欢迎入驻，{companyName}</h3>
+                  <p className="text-zinc-500">系统已初步识别您的行业属性，正在为您生成专属营销模型...</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-zinc-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all group">
+                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <MessageCircle className="w-6 h-6" />
+                    </div>
+                    <span className="font-bold text-zinc-700">微信公众号</span>
+                    <span className="text-xs text-zinc-400 mt-1">获取粉丝画像与推文风格</span>
+                  </button>
+                  <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-zinc-100 hover:border-rose-500 hover:bg-rose-50 transition-all group">
+                    <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                    <span className="font-bold text-zinc-700">小红书</span>
+                    <span className="text-xs text-zinc-400 mt-1">获取种草笔记与达人互动</span>
+                  </button>
+                  <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-zinc-100 hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Globe className="w-6 h-6" />
+                    </div>
+                    <span className="font-bold text-zinc-700">全网舆情扫描</span>
+                    <span className="text-xs text-zinc-400 mt-1">自动聚合近期品牌大事件</span>
+                  </button>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3 mb-8">
+                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800">
+                    <span className="font-bold">全网脉搏监测已就绪：</span>
+                    AI 发现 {companyName} 近期发布了 3 款新品，并在多个社交平台获得超过 500w 曝光。是否一键认领这些数据作为您的初始谈判筹码？
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setStep(2)}
+                  className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-zinc-900/20"
+                >
+                  一键认领并生成数字分身 <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex flex-col"
+              >
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-zinc-900 mb-2">配置您的 AI 谈判分身</h3>
+                  <p className="text-zinc-500">基于您的品牌调性，选择最适合的沟通风格，并设定首轮出击的预算边界。</p>
+                </div>
+
+                <div className="mb-8">
+                  <label className="block text-sm font-bold text-zinc-700 mb-4">1. 选择分身沟通风格</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {personas.map((p) => (
+                      <div 
+                        key={p.id}
+                        onClick={() => setSelectedPersona(p.id)}
+                        className={cn(
+                          "p-5 rounded-2xl border-2 cursor-pointer transition-all",
+                          selectedPersona === p.id ? `border-zinc-900 bg-zinc-50 shadow-md` : `border-zinc-100 hover:border-zinc-300`
+                        )}
+                      >
+                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center mb-3", p.bg, p.color)}>
+                          <p.icon className="w-5 h-5" />
+                        </div>
+                        <h4 className="font-bold text-zinc-900 mb-1">{p.title}</h4>
+                        <p className="text-xs text-zinc-500 leading-relaxed">{p.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <label className="block text-sm font-bold text-zinc-700 mb-4">
+                    2. 设定最高置换预算 (RMB)
+                    <span className="block text-xs font-normal text-zinc-400 mt-1">作为 AI 首次出击的边界，绝不越线。</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="range" 
+                      min="10000" 
+                      max="500000" 
+                      step="5000"
+                      value={budget}
+                      onChange={(e) => setBudget(Number(e.target.value))}
+                      className="flex-1 h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-900"
+                    />
+                    <span className="font-bold text-zinc-900 w-24 text-right">¥{budget.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="px-6 py-4 bg-zinc-100 text-zinc-700 rounded-xl font-bold hover:bg-zinc-200 transition-colors"
+                  >
+                    返回
+                  </button>
+                  <button
+                    onClick={() => setStep(3)}
+                    disabled={!selectedPersona}
+                    className="flex-1 py-4 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-zinc-900/20"
+                  >
+                    启动暗池雷达扫描 <Radar className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center text-center py-8"
+              >
+                {isScanning ? (
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-32 h-32 mb-8">
+                      <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                      <Radar className="absolute inset-0 m-auto w-12 h-12 text-blue-600 animate-pulse" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-2">暗池雷达扫描中...</h3>
+                    <p className="text-zinc-500">正在匹配全网高潜品牌与受众重合度</p>
+                  </div>
+                ) : scanComplete ? (
+                  <div className="flex flex-col items-center w-full">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                      <CheckCircle2 className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-4">首战告捷！锁定高潜品牌</h3>
+                    
+                    <div className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-6 mb-8 text-left">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-900 text-white font-bold flex items-center justify-center rounded-xl shadow-sm">OATLY</div>
+                          <div>
+                            <h4 className="font-bold text-zinc-900 text-lg">OATLY 噢麦力</h4>
+                            <p className="text-sm text-zinc-500">植物蛋白饮品领导品牌</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-emerald-600">92%</div>
+                          <div className="text-xs text-zinc-500 font-medium">受众重合度</div>
+                        </div>
+                      </div>
+                      <p className="text-sm text-zinc-700 bg-white p-3 rounded-lg border border-zinc-100">
+                        <span className="font-bold">AI 洞察：</span>
+                        OATLY 的一二线城市白领受众与 {companyName} 的目标客群高度重合。他们近期正在寻找生活方式类的跨界合作，您的品牌调性非常契合。
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        onComplete(selectedPersona || 'expert', budget);
+                        onClose();
+                      }}
+                      className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                    >
+                      立即让数字分身发起首轮破冰谈判 <Zap className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// --- ROI Calculator Component ---
+function ROICalculator({ initialBudget = 50000, initialConversion = 2.5 }: { initialBudget?: number, initialConversion?: number }) {
+  const [budget, setBudget] = useState(initialBudget);
+  const [conversionRate, setConversionRate] = useState(initialConversion);
+  
+  // Simulated calculation logic
+  const averageOrderValue = 500; // Assume 500 RMB per order
+  const estimatedClicks = budget * 0.8; // Assume 0.8 clicks per RMB
+  const estimatedConversions = Math.round(estimatedClicks * (conversionRate / 100));
+  const estimatedRevenue = estimatedConversions * averageOrderValue;
+  const roi = Math.round(((estimatedRevenue - budget) / budget) * 100);
+
+  return (
+    <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm mt-8">
+      <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-6 uppercase tracking-wider">
+        <Zap className="w-4 h-4 text-emerald-500" />
+        ROI 动态预估计算器 (模拟沙盘)
+      </h4>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-medium text-zinc-700">营销预算 (RMB)</label>
+              <span className="text-sm font-bold text-zinc-900">¥{budget.toLocaleString()}</span>
+            </div>
+            <input 
+              type="range" 
+              min="10000" 
+              max="500000" 
+              step="5000"
+              value={budget}
+              onChange={(e) => setBudget(Number(e.target.value))}
+              className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+          </div>
+          
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-medium text-zinc-700">预期转化率 (%)</label>
+              <span className="text-sm font-bold text-zinc-900">{conversionRate.toFixed(1)}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="0.5" 
+              max="10" 
+              step="0.1"
+              value={conversionRate}
+              onChange={(e) => setConversionRate(Number(e.target.value))}
+              className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+          </div>
+        </div>
+        
+        <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 flex flex-col justify-center">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wider mb-1">预估营收</p>
+              <p className="text-2xl font-bold text-emerald-900">¥{estimatedRevenue.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wider mb-1">投资回报率 (ROI)</p>
+              <p className="text-2xl font-bold text-emerald-900">{roi}%</p>
+            </div>
+          </div>
+          <p className="text-xs text-emerald-600 mt-4">
+            * 此数据为基于行业平均水平的模拟预测，仅供参考。实际效果受多种因素影响。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Editable Need Card Component ---
+function EditableNeedCard({ need, index, onUpdate, onDelete, userPlan, onUpgrade }: { need: StructuredNeed, index: number, onUpdate: (updated: StructuredNeed) => void, onDelete: (id: string) => void, userPlan?: 'free' | 'pro', onUpgrade?: () => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedNeed, setEditedNeed] = useState(need);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<'select' | 'qr' | 'authorizing'>('select');
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+
+  const handleSave = () => {
+    onUpdate(editedNeed);
+    setIsEditing(false);
+  };
+
+  const handleStartVerification = (platform: string) => {
+    setSelectedPlatform(platform);
+    setVerificationStep('qr');
+    
+    // Simulate user scanning QR code after 2 seconds
+    setTimeout(() => {
+      setVerificationStep('authorizing');
+      
+      // Simulate AI parsing and success after another 3 seconds
+      setTimeout(() => {
+        setIsVerificationModalOpen(false);
+        setVerificationStep('select');
+        setSelectedPlatform(null);
+        
+        onUpdate({
+          ...need,
+          isVerified: true,
+          totalFollowers: '150W+',
+          engagementRate: '8.5%',
+          socialAssets: [
+            { platform: '微信公众号', followers: '50万+', icon: 'https://api.iconify.design/ri:wechat-fill.svg?color=%23059669' },
+            { platform: '小红书', followers: '12万+', icon: 'https://api.iconify.design/simple-icons:xiaohongshu.svg?color=%23ef4444' },
+            { platform: '抖音', followers: '88万+', icon: 'https://api.iconify.design/ic:baseline-tiktok.svg?color=%23000000' }
+          ]
+        });
+
+        // Trigger toast (we'll implement this in the parent or use a simple alert for now, 
+        // but the prompt asks for a toast. Let's add a simple custom toast or just use a state in the parent.
+        // For simplicity, we can dispatch a custom event or pass a callback.
+        // Let's just use a simple setTimeout to show a toast-like message if possible, or we can add a toast state here.)
+        const toastEvent = new CustomEvent('showToast', { detail: '资产认证成功！已为您匹配到 12 个高意向跨界品牌，[立即查看]' });
+        window.dispatchEvent(toastEvent);
+
+      }, 3000);
+    }, 2000);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-violet-200/60 transition-all duration-300">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-zinc-900">编辑需求 #{index + 1}</h3>
+          <div className="flex gap-2">
+            <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">取消</button>
+            <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-colors">保存更改</button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">公司/品牌名称</label>
+            <input type="text" value={editedNeed.companyName} onChange={e => setEditedNeed({...editedNeed, companyName: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">所属行业</label>
+            <input type="text" value={editedNeed.industry} onChange={e => setEditedNeed({...editedNeed, industry: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">预算范围</label>
+            <input type="text" value={editedNeed.budgetRange} onChange={e => setEditedNeed({...editedNeed, budgetRange: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">目标受众</label>
+            <input type="text" value={editedNeed.targetAudience} onChange={e => setEditedNeed({...editedNeed, targetAudience: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">营销目标 (逗号分隔)</label>
+            <input type="text" value={editedNeed.marketingGoals.join(', ')} onChange={e => setEditedNeed({...editedNeed, marketingGoals: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">偏好渠道 (逗号分隔)</label>
+            <input type="text" value={editedNeed.preferredChannels.join(', ')} onChange={e => setEditedNeed({...editedNeed, preferredChannels: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">核心卖点 (逗号分隔)</label>
+            <input type="text" value={editedNeed.keySellingPoints.join(', ')} onChange={e => setEditedNeed({...editedNeed, keySellingPoints: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">跨界偏好 (逗号分隔)</label>
+            <input type="text" value={editedNeed.crossBorderPreferences.join(', ')} onChange={e => setEditedNeed({...editedNeed, crossBorderPreferences: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/60 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-300 group relative"
+    >
+      {need.isVerified ? (
+        <div className="absolute top-0 right-0 bg-gradient-to-bl from-amber-400 to-amber-500 text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-2xl rounded-tr-[2.5rem] flex items-center gap-1 shadow-sm overflow-hidden">
+          <motion.div 
+            className="absolute inset-0 bg-white/30"
+            initial={{ x: '-100%' }}
+            animate={{ x: '200%' }}
+            transition={{ repeat: Infinity, duration: 2, ease: "linear", repeatDelay: 3 }}
+          />
+          <CheckCircle2 className="w-3 h-3 relative z-10" />
+          <span className="relative z-10">已认证金标</span>
+        </div>
+      ) : (
+        <div className="absolute top-0 right-0 group/badge z-20">
+          <div className="bg-zinc-100 text-zinc-500 text-[10px] font-bold px-4 py-1.5 rounded-bl-2xl rounded-tr-[2.5rem] flex items-center gap-1 shadow-sm cursor-help">
+            <ShieldCheck className="w-3 h-3" />
+            未认证
+          </div>
+          <div className="absolute top-full right-0 mt-2 w-64 bg-zinc-900 text-white text-xs p-3 rounded-xl shadow-xl opacity-0 invisible group-hover/badge:opacity-100 group-hover/badge:visible transition-all duration-200">
+            绑定真实社交资产，可使您的跨界合作被邀约率提升 300%。
+            <button 
+              onClick={() => setIsVerificationModalOpen(true)}
+              className="mt-2 text-amber-400 font-bold hover:text-amber-300 transition-colors block"
+            >
+              [立即认证]
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="flex items-start justify-between mb-8 pb-8 border-b border-zinc-100">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="bg-rose-50 text-rose-600 text-xs font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider">
+              需求 #{index + 1}
+            </span>
+            <h3 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
+              {need.companyName}
+            </h3>
+          </div>
+          <p className="text-zinc-500 flex items-center gap-2">
+            <span className="font-medium text-zinc-700">{need.industry}</span>
+            <span className="w-1 h-1 rounded-full bg-zinc-300" />
+            <span>预算: {need.budgetRange}</span>
+          </p>
+        </div>
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+          {!need.isVerified && (
+            <button 
+              onClick={() => setIsVerificationModalOpen(true)}
+              className="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors flex items-center gap-1 text-sm font-medium"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              授权认证
+            </button>
+          )}
+          <button onClick={() => setIsEditing(true)} className="p-2 text-zinc-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors">
+            编辑
+          </button>
+          <button onClick={() => onDelete(need.id)} className="p-2 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors">
+            删除
+          </button>
+        </div>
+      </div>
+      
+      {need.isVerified && need.socialAssets && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 uppercase tracking-wider">
+              <ShieldCheck className="w-4 h-4 text-amber-500" />
+              核心数字资产
+            </h4>
+            {userPlan === 'pro' ? (
+              <button className="flex items-center gap-1.5 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors border border-violet-100">
+                <TrendingUp className="w-3.5 h-3.5" />
+                已开启优先展示 (Boost)
+              </button>
+            ) : (
+              <button 
+                onClick={onUpgrade}
+                className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 bg-zinc-50 hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors border border-zinc-200"
+              >
+                <Lock className="w-3 h-3" />
+                升级 Pro 解锁优先展示
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100/50 rounded-2xl p-5 shadow-sm">
+              <div className="text-xs font-bold text-amber-800/60 uppercase tracking-wider mb-1">全网粉丝量</div>
+              <div className="text-2xl font-black text-amber-900">{need.totalFollowers || '150W+'}</div>
+              <div className="mt-3 h-8 flex items-end gap-1">
+                {[40, 60, 45, 80, 65, 90, 100].map((h, i) => (
+                  <div key={i} className="w-full bg-amber-200 rounded-t-sm" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100/50 rounded-2xl p-5 shadow-sm">
+              <div className="text-xs font-bold text-emerald-800/60 uppercase tracking-wider mb-1">近期互动率</div>
+              <div className="text-2xl font-black text-emerald-900">{need.engagementRate || '8.5%'}</div>
+              <div className="mt-3 text-xs font-medium text-emerald-700 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> 较上月提升 1.2%
+              </div>
+            </div>
+            <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 shadow-sm flex flex-col justify-center">
+              <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">已绑定平台</div>
+              <div className="flex flex-wrap gap-2">
+                {need.socialAssets.map((asset, i) => (
+                  <div key={i} className="flex items-center gap-1.5 bg-white border border-zinc-200 px-2.5 py-1.5 rounded-lg shadow-sm">
+                    {asset.icon ? (
+                      <img src={asset.icon} alt={asset.platform} className="w-4 h-4" />
+                    ) : (
+                      <div className="w-4 h-4 bg-zinc-200 rounded-full" />
+                    )}
+                    <span className="text-xs font-bold text-zinc-700">{asset.platform}</span>
+                    <span className="text-[10px] font-medium text-zinc-500">{asset.followers}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">目标受众</h4>
+            <p className="text-[15px] text-zinc-700 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">{need.targetAudience}</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">营销目标</h4>
+            <div className="flex flex-wrap gap-2">
+              {need.marketingGoals.map((goal, i) => (
+                <span key={i} className="text-[13px] bg-white border border-zinc-200 text-zinc-700 px-3 py-1.5 rounded-xl shadow-sm">
+                  {goal}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">偏好渠道</h4>
+            <div className="flex flex-wrap gap-2">
+              {need.preferredChannels.map((channel, i) => (
+                <span key={i} className="text-[13px] bg-white border border-zinc-200 text-zinc-700 px-3 py-1.5 rounded-xl shadow-sm">
+                  {channel}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">核心卖点</h4>
+            <ul className="list-disc list-inside text-[15px] text-zinc-700 space-y-2 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+              {need.keySellingPoints.map((point, i) => (
+                <li key={i}>{point}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">跨界偏好</h4>
+            <ul className="list-disc list-inside text-[15px] text-zinc-700 space-y-2 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+              {need.crossBorderPreferences.map((pref, i) => (
+                <li key={i}>{pref}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {/* Verification Modal */}
+      {isVerificationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-zinc-900/40 backdrop-blur-md"
+            onClick={() => setIsVerificationModalOpen(false)}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-zinc-200/50"
+          >
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold text-zinc-900 flex items-center gap-3">
+                  <ShieldCheck className="w-8 h-8 text-amber-500" />
+                  认证您的品牌数字资产
+                </h3>
+                <button 
+                  onClick={() => setIsVerificationModalOpen(false)}
+                  className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {verificationStep === 'select' && (
+                <div className="space-y-6">
+                  <p className="text-zinc-600">请选择您要授权的平台。授权后，系统将自动生成您的专属商业名片，提升撮合精准度。</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { name: '微信公众号', icon: 'https://api.iconify.design/ri:wechat-fill.svg?color=%23059669' },
+                      { name: '小红书', icon: 'https://api.iconify.design/simple-icons:xiaohongshu.svg?color=%23ef4444' },
+                      { name: '抖音', icon: 'https://api.iconify.design/ic:baseline-tiktok.svg?color=%23000000' },
+                      { name: '淘宝/天猫', icon: 'https://api.iconify.design/ri:taobao-fill.svg?color=%23ff5000' }
+                    ].map((platform) => (
+                      <button
+                        key={platform.name}
+                        onClick={() => handleStartVerification(platform.name)}
+                        className="flex flex-col items-center justify-center p-6 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-amber-400 hover:bg-amber-50/50 hover:shadow-md transition-all group"
+                      >
+                        <img src={platform.icon} alt={platform.name} className="w-10 h-10 mb-3 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm font-bold text-zinc-700">{platform.name}</span>
+                        <span className="mt-2 text-[10px] font-medium text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">一键接入</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {verificationStep === 'qr' && (
+                <motion.div 
+                  initial={{ opacity: 0, rotateY: 90 }}
+                  animate={{ opacity: 1, rotateY: 0 }}
+                  className="flex flex-col items-center justify-center py-8"
+                >
+                  <div className="text-center mb-6">
+                    <h4 className="text-lg font-bold text-zinc-900 mb-2">请使用 {selectedPlatform} 扫码授权</h4>
+                    <p className="text-sm text-zinc-500">二维码将在 02:59 后过期</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-zinc-200 mb-6 relative group">
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=rockcent_auth_${selectedPlatform}`} alt="QR Code" className="w-48 h-48" />
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <RefreshCw className="w-8 h-8 text-zinc-600" />
+                    </div>
+                  </div>
+                  <button onClick={() => setVerificationStep('select')} className="text-sm font-medium text-zinc-500 hover:text-zinc-800">返回重新选择</button>
+                </motion.div>
+              )}
+
+              {verificationStep === 'authorizing' && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-12"
+                >
+                  <div className="relative w-24 h-24 mb-6">
+                    <div className="absolute inset-0 border-4 border-amber-100 rounded-full" />
+                    <div className="absolute inset-0 border-4 border-amber-500 rounded-full border-t-transparent animate-spin" />
+                    <ShieldCheck className="absolute inset-0 m-auto w-10 h-10 text-amber-500 animate-pulse" />
+                  </div>
+                  <h4 className="text-xl font-bold text-zinc-900 mb-2">🟢 授权中...</h4>
+                  <p className="text-sm text-zinc-500 animate-pulse">AI 正在为您生成结构化资产报告...</p>
+                </motion.div>
+              )}
+            </div>
+
+            <div className="bg-zinc-50 px-8 py-4 border-t border-zinc-100 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                <strong className="text-zinc-700">数据安全声明：</strong>Rockcent 采用企业级加密技术。您授权的数据仅用于生成您的专属商业名片与提升撮合精准度，绝不公开您的核心隐私数据。
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// --- Resource Dashboard Component ---
+function ResourceDashboard({ knowledgeBase }: { knowledgeBase: StructuredNeed[] }) {
+  if (knowledgeBase.length === 0) return null;
+
+  // Process data for charts
+  const budgetData = knowledgeBase.reduce((acc, need) => {
+    const range = need.budgetRange || '未指定';
+    const existing = acc.find(item => item.name === range);
+    if (existing) {
+      existing.value += 1;
+    } else {
+      acc.push({ name: range, value: 1 });
+    }
+    return acc;
+  }, [] as { name: string, value: number }[]);
+
+  const COLORS = ['#8B5CF6', '#F43F5E', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#EC4899', '#14B8A6'];
+
+  const goalsData = knowledgeBase.reduce((acc, need) => {
+    need.marketingGoals.forEach(goal => {
+      const existing = acc.find(item => item.name === goal);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        acc.push({ name: goal, count: 1 });
+      }
+    });
+    return acc;
+  }, [] as { name: string, count: number }[]).sort((a, b) => b.count - a.count).slice(0, 5);
+
+  // Mock data for new charts
+  const industryData = [
+    { name: '美妆护肤', size: 400 },
+    { name: '食品饮料', size: 300 },
+    { name: '3C数码', size: 300 },
+    { name: '汽车出行', size: 200 },
+    { name: '服饰鞋包', size: 278 },
+    { name: '母婴亲子', size: 189 },
+    { name: '家居生活', size: 239 },
+    { name: '宠物用品', size: 150 },
+    { name: '运动户外', size: 210 },
+    { name: '本地生活', size: 120 },
+  ];
+
+  const CustomizedTreemapContent = (props: any) => {
+    const { x, y, width, height, name, index } = props;
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={COLORS[index % COLORS.length]}
+          stroke="#fff"
+          strokeWidth={2}
+          rx={4}
+        />
+        {width > 50 && height > 30 && (
+          <text x={x + width / 2} y={y + height / 2} textAnchor="middle" fill="#fff" fontSize={12} fontWeight={600} dominantBaseline="central">
+            {name}
+          </text>
+        )}
+      </g>
+    );
+  };
+
+  const kpiData = [
+    { name: '品牌曝光(万)', 预测值: 1200, 行业均值: 800 },
+    { name: '互动量(万)', 预测值: 150, 行业均值: 90 },
+    { name: '留资数(千)', 预测值: 45, 行业均值: 30 },
+    { name: '转化率(%)', 预测值: 3.2, 行业均值: 2.1 },
+  ];
+
+  return (
+    <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/60 mb-10">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center">
+          <Database className="w-5 h-5 text-violet-600" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-zinc-900">资源库数据看板</h3>
+          <p className="text-sm text-zinc-500">基于您当前 {knowledgeBase.length} 个营销需求的深度分析与全网数据预测</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Chart 1: Budget Distribution */}
+        <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
+          <h4 className="text-sm font-bold text-zinc-700 mb-6 text-center">预算分布</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={budgetData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {budgetData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: '#18181B', fontWeight: 500 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4 mt-4">
+            {budgetData.map((entry, index) => (
+              <div key={index} className="flex items-center gap-2 text-xs text-zinc-600">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                {entry.name} ({entry.value})
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chart 2: Top Goals */}
+        <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
+          <h4 className="text-sm font-bold text-zinc-700 mb-6 text-center">热门营销目标 (Top 5)</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={goalsData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E4E4E7" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 12 }} width={100} />
+                <Tooltip 
+                  cursor={{ fill: '#F4F4F5' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                />
+                <Bar dataKey="count" fill="#8B5CF6" radius={[0, 4, 4, 0]} barSize={20}>
+                  {goalsData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Chart 3: Industry Heatmap */}
+        <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
+          <h4 className="text-sm font-bold text-zinc-700 mb-6 text-center">全网行业品牌资源分布热力图</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={industryData}
+                dataKey="size"
+                aspectRatio={4 / 3}
+                stroke="#fff"
+                fill="#8B5CF6"
+                content={<CustomizedTreemapContent />}
+              >
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: '#18181B', fontWeight: 500 }}
+                  formatter={(value: number) => [`${value} 个品牌`, '资源热度']}
+                />
+              </Treemap>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-xs text-zinc-500 text-center mt-4">基于 Rockcent 暗池 10万+ 品牌活跃度实时计算</p>
+        </div>
+
+        {/* Chart 4: KPI Prediction */}
+        <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
+          <h4 className="text-sm font-bold text-zinc-700 mb-6 text-center">基于营销目标的 KPI 预测</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={kpiData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E4E7" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 11 }} />
+                <Tooltip 
+                  cursor={{ fill: '#F4F4F5' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="预测值" fill="#10B981" radius={[4, 4, 0, 0]} barSize={16} />
+                <Bar dataKey="行业均值" fill="#D4D4D8" radius={[4, 4, 0, 0]} barSize={16} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-xs text-zinc-500 text-center mt-4">AI 综合历史数据与当前资源库匹配度生成</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Main Dashboard Component ---
+function Dashboard({ merchantName, onLogout, initialPersona, initialBudget }: { merchantName: string; onLogout: () => void; initialPersona?: string; initialBudget?: number }) {
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [activeTab, setActiveTab] = useState<'chat' | 'knowledge' | 'matchmaking' | 'agent' | 'network'>('network');
+  const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
+  const [credits, setCredits] = useState<number>(3);
+  const [matchmakingCount, setMatchmakingCount] = useState<number>(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: `尊贵的 **${merchantName}**，您好！我是您的专属AI跨界营销助手。\n\n您可以直接告诉我您的营销需求，或者上传文件、输入网址，我会自动为您建立专属的资源库，并提供跨界营销撮合和策略建议。今天我能为您做些什么？`,
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [knowledgeBase, setKnowledgeBase] = useState<StructuredNeed[]>([]);
+  const [matchmaking, setMatchmaking] = useState<MatchmakingSuggestion[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isGeneratingMatch, setIsGeneratingMatch] = useState(false);
+  
+  const [resourceInput, setResourceInput] = useState('');
+  const [isExtractingResource, setIsExtractingResource] = useState(false);
+  const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [generatingPitchDeckId, setGeneratingPitchDeckId] = useState<string | null>(null);
+  const [generatingMoUId, setGeneratingMoUId] = useState<string | null>(null);
+  const [generatingTimelineId, setGeneratingTimelineId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  // Network Tab Modals State
+  const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
+  const [showWarRoomModal, setShowWarRoomModal] = useState(false);
+  const [showSocialGiftModal, setShowSocialGiftModal] = useState(false);
+  const [socialGiftType, setSocialGiftType] = useState<'poster' | 'weibo'>('poster');
+  const [showShareGiftModal, setShowShareGiftModal] = useState(false);
+  const [shareStep, setShareStep] = useState<1 | 2 | 3>(1);
+  const [showBrandDetailModal, setShowBrandDetailModal] = useState(false);
+  const [selectedBrandDetail, setSelectedBrandDetail] = useState<any>(null);
+
+  // Agent Tab Modals State
+  const [showPersonaPreviewModal, setShowPersonaPreviewModal] = useState(false);
+  const [showSimulationModal, setShowSimulationModal] = useState(false);
+  const [simulationMessages, setSimulationMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
+  const [simulationInput, setSimulationInput] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationHandoff, setSimulationHandoff] = useState(false);
+  const simulationEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSimulationBottom = () => {
+    simulationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToSimulationBottom();
+  }, [simulationMessages]);
+  const [selectedPersona, setSelectedPersona] = useState(initialPersona || '活泼网感的消费品牌 PR');
+  const [maxBudget, setMaxBudget] = useState(initialBudget || 50000);
+
+  // Global Alert State
+  const [showGlobalAlert, setShowGlobalAlert] = useState(false);
+
+  // Agent Status State
+  const [agentStatus, setAgentStatus] = useState('正在暗池中静默寻址...');
+
+  // File Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleShowToast = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      setToastMessage(customEvent.detail);
+      setTimeout(() => setToastMessage(null), 5000);
+    };
+    window.addEventListener('showToast', handleShowToast);
+    return () => window.removeEventListener('showToast', handleShowToast);
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (activeTab === 'agent') {
+      const statuses = [
+        '正在暗池中静默寻址...',
+        '正在与 OATLY 的 Agent 进行预谈判...',
+        '正在分析 Keep 的受众重合度...',
+        '发现 2 个高潜合作方，正在生成初步方案...',
+        '正在与 牧高笛 确认资源置换比例...',
+        '活跃拓展中，正在匹配目标圈层...'
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        i = (i + 1) % statuses.length;
+        setAgentStatus(statuses[i]);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowGlobalAlert(true);
+    }, 4000); // Show alert after 4 seconds to simulate AI monitoring
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleToast = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setToastMessage(customEvent.detail);
+      setTimeout(() => setToastMessage(null), 5000);
+    };
+    window.addEventListener('showToast', handleToast);
+    return () => window.removeEventListener('showToast', handleToast);
+  }, []);
+
+  const handleSimulationSend = async () => {
+    if (!simulationInput.trim() || isSimulating || simulationHandoff) return;
+
+    const userMsg = { role: 'user' as const, content: simulationInput };
+    setSimulationMessages(prev => [...prev, userMsg]);
+    setSimulationInput('');
+    setIsSimulating(true);
+
+    const history = [...simulationMessages, userMsg];
+    
+    // Read current settings from DOM or state (we'll use hardcoded values for the demo if not in state)
+    // In a real app, these would be bound to state variables from the "智能体边界设定" section.
+    const config = {
+      merchantName: merchantName,
+      targetCompany: "OATLY 噢麦力",
+      audienceOverlap: 92,
+      sharedSocialBacking: "某知名咖啡品牌",
+      maxBudget: maxBudget,
+      initialOffer: "互换双微头条 + 联合推出「燕麦拿铁特调」套餐",
+      persona: selectedPersona,
+      negativePrompts: "禁用任何表情符号；禁用“亲亲/宝子”等词汇；回复字数控制在80字以内；多用短句和数据。",
+      glossary: "核心Slogan: 探索无限可能；专有产品名: Rockcent AI"
+    };
+
+    const { response, isHandoff } = await simulateBDNegotiation(history, config);
+
+    setSimulationMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    if (isHandoff) {
+      setSimulationHandoff(true);
+      const toastEvent = new CustomEvent('showToast', { detail: '【高优意向单】已生成，待审批！' });
+      window.dispatchEvent(toastEvent);
+    }
+    setIsSimulating(false);
+  };
+
+  const startSimulation = () => {
+    setSimulationMessages([]);
+    setSimulationInput('');
+    setSimulationHandoff(false);
+    setShowSimulationModal(true);
+    
+    // Initial message from user (acting as target company)
+    setSimulationMessages([
+      { role: 'user', content: '你好，我是 OATLY 商务代表。请问贵司有什么合作意向？' }
+    ]);
+  };
+
+  const handleSendMessage = async () => {
+    if (!input.trim() && !selectedFile && !isLoading) return;
+
+    let fileContent = '';
+    let attachments: Attachment[] = [];
+    
+    if (selectedFile) {
+      fileContent = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string || '');
+        reader.readAsText(selectedFile);
+      });
+      attachments.push({ type: 'file', name: selectedFile.name, content: fileContent });
+    }
+
+    const messageContent = input.trim() 
+      ? (selectedFile ? `[上传了文件: ${selectedFile.name}]\n${input.trim()}` : input.trim())
+      : (selectedFile ? `[上传了文件: ${selectedFile.name}] 请分析此文件中的营销需求。` : '');
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: messageContent,
+      attachments: attachments.length > 0 ? attachments : undefined
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    const currentFile = selectedFile;
+    setSelectedFile(null);
+    setIsLoading(true);
+
+    const isMarketingNeed = messageContent.length > 20 || messageContent.includes('营销') || messageContent.includes('推广') || messageContent.includes('合作') || currentFile;
+    
+    if (isMarketingNeed) {
+      setIsExtracting(true);
+      const extractedNeed = await extractMarketingNeeds(messageContent, fileContent);
+      if (extractedNeed) {
+        setKnowledgeBase(prev => [...prev, extractedNeed]);
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `我已经成功识别了您的营销需求，并将其结构化存入您的资源库中。\n\n**识别到的公司/品牌**: ${extractedNeed.companyName}\n**所属行业**: ${extractedNeed.industry}\n**目标受众**: ${extractedNeed.targetAudience}\n\n您可以前往“资源库”查看完整信息，或者前往“跨界撮合”生成营销策略。`,
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '抱歉，我未能从您的输入中提取出完整的营销需求。请提供更多详细信息，例如您的行业、目标受众、预算和期望的营销渠道。',
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      }
+      setIsExtracting(false);
+    } else {
+      const chatHistory = messages.map(m => ({ role: m.role, content: m.content })).concat({ role: 'user', content: messageContent });
+      const response = await chatWithAI(chatHistory);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleGenerateMatchmaking = async () => {
+    if (knowledgeBase.length === 0) {
+      alert('请先在聊天中输入您的营销需求，建立资源库后再生成撮合建议。');
+      return;
+    }
+    
+    if (userPlan === 'free' && matchmakingCount >= 3) {
+      setShowUpgradeModal(true);
+      const toastEvent = new CustomEvent('showToast', { detail: '免费版每月仅限生成 3 次撮合建议，请升级 Pro 版解锁无限制撮合。' });
+      window.dispatchEvent(toastEvent);
+      return;
+    }
+    
+    setIsGeneratingMatch(true);
+    const suggestions = await generateMatchmaking(knowledgeBase);
+    setMatchmaking(suggestions);
+    setMatchmakingCount(prev => prev + 1);
+    setIsGeneratingMatch(false);
+    setActiveTab('matchmaking');
+  };
+
+  const handleAddResource = async () => {
+    if (!resourceInput.trim()) return;
+    setIsExtractingResource(true);
+    const extractedNeed = await extractMarketingNeeds(resourceInput);
+    if (extractedNeed) {
+      setKnowledgeBase(prev => [...prev, extractedNeed]);
+      setResourceInput('');
+    } else {
+      alert('未能成功提取资源信息，请重试。');
+    }
+    setIsExtractingResource(false);
+  };
+
+  const handleRefinePlan = async (suggestion: MatchmakingSuggestion) => {
+    setRefiningId(suggestion.id);
+    const refinedDetails = await refineMatchmakingPlan(suggestion);
+    setMatchmaking(prev => prev.map(s => 
+      s.id === suggestion.id ? { ...s, refinedDetails } : s
+    ));
+    setRefiningId(null);
+  };
+
+  const handleGeneratePitchDeck = async (suggestion: MatchmakingSuggestion) => {
+    if (credits <= 0) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setCredits(prev => prev - 1);
+    setGeneratingPitchDeckId(suggestion.id);
+    const pitchDeck = await generatePitchDeck(suggestion);
+    setMatchmaking(prev => prev.map(s => 
+      s.id === suggestion.id ? { ...s, pitchDeck } : s
+    ));
+    setGeneratingPitchDeckId(null);
+    
+    const toastEvent = new CustomEvent('showToast', { detail: '已消耗 1 点连接点数，生成合作邀请函成功！' });
+    window.dispatchEvent(toastEvent);
+  };
+
+  const handleGenerateMoU = async (suggestion: MatchmakingSuggestion) => {
+    setGeneratingMoUId(suggestion.id);
+    const mou = await generateMoU(suggestion);
+    setMatchmaking(prev => prev.map(s => 
+      s.id === suggestion.id ? { ...s, mou } : s
+    ));
+    setGeneratingMoUId(null);
+  };
+
+  const handleGenerateTimeline = async (suggestion: MatchmakingSuggestion) => {
+    setGeneratingTimelineId(suggestion.id);
+    const timeline = await generateTimeline(suggestion);
+    setMatchmaking(prev => prev.map(s => 
+      s.id === suggestion.id ? { ...s, timeline } : s
+    ));
+    setGeneratingTimelineId(null);
+  };
+
+  const handleStatusChange = (suggestionId: string, newStatus: MatchmakingSuggestion['status']) => {
+    setMatchmaking(prev => prev.map(s => 
+      s.id === suggestionId ? { ...s, status: newStatus } : s
+    ));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+    // clear input
+    e.target.value = '';
+  };
+
+  return (
+    <div className="flex h-screen bg-[#F8F9FA] font-sans text-zinc-900 selection:bg-rose-500/30">
+      <AnimatePresence>
+        {showTutorial && <OnboardingWizard isOpen={showTutorial} onClose={() => setShowTutorial(false)} companyName={merchantName} onComplete={(persona, budget) => { setSelectedPersona(persona); setMaxBudget(budget); startSimulation(); }} />}
+      </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+              onClick={() => setShowUpgradeModal(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden border border-zinc-200/50 flex flex-col md:flex-row"
+            >
+              {/* Left Side - Pro Plan */}
+              <div className="flex-1 p-10 bg-gradient-to-br from-zinc-900 to-zinc-950 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/20 rounded-full blur-3xl" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Crown className="w-6 h-6 text-amber-400" />
+                    <h3 className="text-2xl font-bold">升级 Pro 版</h3>
+                  </div>
+                  <p className="text-zinc-400 mb-8">解锁全维度的商业撮合能力，让每一次跨界都精准高效。</p>
+                  
+                  <div className="space-y-4 mb-10">
+                    {[
+                      '无限制的 AI 撮合推荐',
+                      '解锁「多维匹配度雷达图」深度分析',
+                      '不限次生成「合作备忘录 (MoU)」',
+                      '不限次生成「联合营销执行排期」',
+                      '品牌资产认证「全网多平台交叉验证」',
+                      '资源库优先展示特权 (Boost)'
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-violet-400 shrink-0" />
+                        <span className="text-sm text-zinc-300">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      setUserPlan('pro');
+                      setShowUpgradeModal(false);
+                      const toastEvent = new CustomEvent('showToast', { detail: '升级成功！您已解锁 Pro 版全部功能。' });
+                      window.dispatchEvent(toastEvent);
+                    }}
+                    className="w-full py-4 bg-white text-zinc-900 rounded-2xl font-bold hover:bg-zinc-100 transition-colors shadow-lg"
+                  >
+                    立即升级 (¥999/月)
+                  </button>
+                </div>
+              </div>
+              
+              {/* Right Side - Connect Credits */}
+              <div className="flex-1 p-10 bg-white">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-6 h-6 text-amber-500" />
+                    <h3 className="text-2xl font-bold text-zinc-900">充值连接点数</h3>
+                  </div>
+                  <button onClick={() => setShowUpgradeModal(false)} className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-full transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-zinc-500 mb-8">消耗点数发送「合作邀请函」，按效果付费，降低试错成本。</p>
+                
+                <div className="grid gap-4 mb-8">
+                  {[
+                    { points: 10, price: '¥99', popular: false },
+                    { points: 50, price: '¥399', popular: true },
+                    { points: 200, price: '¥999', popular: false }
+                  ].map((pkg, i) => (
+                    <div key={i} className={cn(
+                      "flex items-center justify-between p-5 rounded-2xl border-2 cursor-pointer transition-all",
+                      pkg.popular ? "border-amber-400 bg-amber-50/30" : "border-zinc-200 hover:border-amber-200 hover:bg-zinc-50"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold", pkg.popular ? "bg-amber-100 text-amber-600" : "bg-zinc-100 text-zinc-600")}>
+                          {pkg.points}
+                        </div>
+                        <div>
+                          <div className="font-bold text-zinc-900">连接点数</div>
+                          {pkg.popular && <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">最受欢迎</div>}
+                        </div>
+                      </div>
+                      <div className="font-black text-xl text-zinc-900">{pkg.price}</div>
+                    </div>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    setCredits(prev => prev + 50);
+                    setShowUpgradeModal(false);
+                    const toastEvent = new CustomEvent('showToast', { detail: '充值成功！已为您添加 50 点连接点数。' });
+                    window.dispatchEvent(toastEvent);
+                  }}
+                  className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-colors shadow-lg"
+                >
+                  购买 50 点 (¥399)
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar - Dark Premium Vibe */}
+      <div className="w-72 bg-[#0A0A0B] flex flex-col border-r border-zinc-800/50 shadow-2xl z-20 relative overflow-hidden">
+        {/* Subtle sidebar glow */}
+        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-rose-500/10 to-transparent pointer-events-none" />
+        
+        <div className="p-6 relative z-10">
+          <div className="mb-8">
+            <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-lg inline-block mb-4">
+              <Logo className="h-10 w-auto" variant="dark" />
+            </div>
+            <p className="text-[11px] text-zinc-500 font-semibold tracking-widest uppercase">每一个品牌都应该有自己的朋友圈</p>
+          </div>
+          
+          <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-white font-bold shadow-inner border border-white/10">
+              {merchantName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-sm font-semibold text-white truncate">{merchantName}</p>
+              <p className="text-[11px] text-zinc-400 truncate uppercase tracking-wider mt-0.5">商户工作台</p>
+            </div>
+          </div>
+        </div>
+        
+        <nav className="flex-1 px-4 py-2 space-y-1.5 relative z-10">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[15px] font-medium transition-all duration-300",
+              activeTab === 'chat' 
+                ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            )}
+          >
+            <Sparkles className={cn("w-5 h-5", activeTab === 'chat' ? "text-rose-400" : "opacity-70")} />
+            需求对话 (AI)
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('knowledge')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[15px] font-medium transition-all duration-300",
+              activeTab === 'knowledge' 
+                ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            )}
+          >
+            <Database className={cn("w-5 h-5", activeTab === 'knowledge' ? "text-violet-400" : "opacity-70")} />
+            资源库
+            {knowledgeBase.length > 0 && (
+              <span className="ml-auto bg-violet-500/20 text-violet-300 py-0.5 px-2.5 rounded-full text-xs border border-violet-500/20 font-semibold">
+                {knowledgeBase.length}
+              </span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('matchmaking')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[15px] font-medium transition-all duration-300",
+              activeTab === 'matchmaking' 
+                ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            )}
+          >
+            <Zap className={cn("w-5 h-5", activeTab === 'matchmaking' ? "text-amber-400" : "opacity-70")} />
+            跨界撮合策略
+            {matchmaking.length > 0 && (
+              <span className="ml-auto bg-amber-500/20 text-amber-300 py-0.5 px-2.5 rounded-full text-xs border border-amber-500/20 font-semibold">
+                {matchmaking.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('agent')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[15px] font-medium transition-all duration-300",
+              activeTab === 'agent' 
+                ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            )}
+          >
+            <Bot className={cn("w-5 h-5", activeTab === 'agent' ? "text-emerald-400" : "opacity-70")} />
+            数字分身 BD
+          </button>
+
+          <button
+            onClick={() => setActiveTab('network')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[15px] font-medium transition-all duration-300",
+              activeTab === 'network' 
+                ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            )}
+          >
+            <Network className={cn("w-5 h-5", activeTab === 'network' ? "text-blue-400" : "opacity-70")} />
+            品牌朋友圈
+          </button>
+        </nav>
+        
+        <div className="p-6 mt-auto space-y-4 relative z-10">
+          <button 
+            onClick={handleGenerateMatchmaking}
+            disabled={isGeneratingMatch || knowledgeBase.length === 0}
+            className="w-full bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-white/5 disabled:text-zinc-500 disabled:border-white/5 py-4 rounded-2xl text-[15px] font-bold transition-all flex flex-col items-center justify-center gap-1 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] disabled:shadow-none border border-transparent"
+          >
+            <div className="flex items-center gap-2">
+              {isGeneratingMatch ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              {isGeneratingMatch ? '正在生成策略...' : '一键生成营销策略'}
+            </div>
+            {userPlan === 'free' && (
+              <span className="text-[10px] text-zinc-500 font-normal">
+                本月剩余次数: {Math.max(0, 3 - matchmakingCount)}/3
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            退出登录
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+        {/* Top Header */}
+        <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200/50 bg-white/80 backdrop-blur-md z-30 relative">
+          <div className="flex items-center gap-2">
+            {userPlan === 'pro' ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white rounded-lg text-xs font-bold shadow-sm">
+                <Crown className="w-3.5 h-3.5" />
+                PRO 版
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg text-xs font-bold border border-zinc-200">
+                  免费版
+                </div>
+                <button 
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="text-xs font-bold text-violet-600 hover:text-violet-700 underline underline-offset-2 ml-2"
+                >
+                  升级解锁特权
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200/60 rounded-lg shadow-sm">
+              <Coins className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-bold text-amber-700">{credits} 点</span>
+              <button 
+                onClick={() => setShowUpgradeModal(true)}
+                className="ml-2 w-5 h-5 bg-amber-200 text-amber-800 rounded-full flex items-center justify-center hover:bg-amber-300 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Chat Tab */}
+        {activeTab === 'chat' && (
+          <div className="flex-1 flex flex-col relative h-full">
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#F8F9FA] via-[#F8F9FA]/80 to-transparent z-10 pointer-events-none flex items-start justify-center pt-8">
+              <div className="bg-white/80 backdrop-blur-xl px-6 py-2.5 rounded-full border border-zinc-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-4">
+                <Logo className="h-6 w-auto" variant="light" />
+                <div className="w-px h-4 bg-zinc-200"></div>
+                <span className="text-[13px] font-semibold text-zinc-600 tracking-wide">每一个品牌都应该有自己的朋友圈</span>
+              </div>
+            </div>
+            
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto px-4 py-12 pb-40">
+              <div className="max-w-4xl mx-auto space-y-8">
+                <AnimatePresence initial={false}>
+                  {messages.map((msg) => (
+                    <motion.div 
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn("flex gap-4", msg.role === 'user' ? "flex-row-reverse" : "")}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                        msg.role === 'user' 
+                          ? "bg-gradient-to-br from-rose-400 to-violet-500 text-white" 
+                          : "bg-white border border-zinc-200 text-zinc-900"
+                      )}>
+                        {msg.role === 'user' ? <Building2 className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                      </div>
+                      <div className={cn(
+                        "px-6 py-4 rounded-3xl text-[15px] leading-relaxed max-w-[80%]",
+                        msg.role === 'user' 
+                          ? "bg-zinc-900 text-white rounded-tr-sm shadow-md" 
+                          : "bg-white text-zinc-800 rounded-tl-sm shadow-sm border border-zinc-100"
+                      )}>
+                        <div className="markdown-body prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-semibold">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                
+                {isLoading && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex gap-4"
+                  >
+                    <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-200 text-zinc-900 flex items-center justify-center shrink-0 shadow-sm">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <div className="px-6 py-4 rounded-3xl bg-white text-zinc-800 rounded-tl-sm shadow-sm border border-zinc-100 flex items-center gap-3">
+                      <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                      <span className="text-sm text-zinc-500">
+                        {isExtracting ? '正在深度解析营销需求并结构化...' : 'AI正在思考...'}
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+            
+                {/* Input Area - Floating Glassmorphism */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent pt-12 pb-8 px-6 z-20">
+              <div className="max-w-4xl mx-auto">
+                {messages.length === 1 && (
+                  <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                    {[
+                      "我想和咖啡品牌做一次跨界联名",
+                      "我们是美妆品牌，想找游戏IP合作",
+                      "预算10万，目标是提升品牌曝光",
+                      "寻找能触达Z世代的跨界营销伙伴"
+                    ].map((prompt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setInput(prompt)}
+                        className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-zinc-200/60 rounded-full text-[13px] text-zinc-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-all shadow-sm"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="relative flex flex-col gap-2 bg-white/90 backdrop-blur-2xl border border-zinc-200/80 shadow-[0_8px_40px_rgb(0,0,0,0.08)] rounded-[2rem] p-3 transition-all focus-within:ring-4 focus-within:ring-rose-500/10 focus-within:border-rose-300">
+                  {selectedFile && (
+                    <div className="flex items-center gap-2 bg-zinc-100 px-3 py-2 rounded-xl w-fit ml-2 mt-1">
+                      <FileText className="w-4 h-4 text-zinc-500" />
+                      <span className="text-sm text-zinc-700 max-w-[200px] truncate">{selectedFile.name}</span>
+                      <button onClick={() => setSelectedFile(null)} className="text-zinc-400 hover:text-rose-500 p-1 rounded-full hover:bg-zinc-200">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2">
+                    <div className="flex gap-1 pb-1 pl-2">
+                      <label className="p-3 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl cursor-pointer transition-colors">
+                        <Paperclip className="w-5 h-5" />
+                        <input type="file" className="hidden" onChange={handleFileUpload} accept=".txt,.md,.csv" />
+                      </label>
+                      <button className="p-3 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-colors">
+                        <LinkIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                    
+                    <textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="描述您的营销需求，或粘贴相关网址..."
+                      className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] px-3 py-4 outline-none resize-none max-h-32 min-h-[56px] placeholder:text-zinc-400"
+                      rows={1}
+                      disabled={isLoading}
+                    />
+                    
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={(!input.trim() && !selectedFile) || isLoading}
+                      className="p-4 bg-zinc-950 text-white rounded-[1.5rem] hover:bg-zinc-800 disabled:bg-zinc-100 disabled:text-zinc-400 transition-all shrink-0 mb-0.5 mr-0.5 shadow-md"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center mt-4 text-[13px] text-zinc-400 font-medium flex items-center justify-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>您的数据已加密保护，仅用于为您生成营销策略。AI 可能会产生不准确的信息，请核实重要内容。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Knowledge Base Tab */}
+        {activeTab === 'knowledge' && (
+          <div className="flex-1 overflow-y-auto p-12">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-10 flex justify-between items-end">
+                <div>
+                  <h2 className="text-4xl font-bold text-zinc-900 tracking-tight flex items-center gap-3">
+                    <Database className="w-8 h-8 text-emerald-500" />
+                    全域感知与自进化资产库
+                  </h2>
+                  <p className="text-zinc-500 mt-3 text-lg">不仅是静态存储，更是“活数据”。AI 实时监听全网动态，深度解析多模态资产，为您沉淀高维度的商业向量。</p>
+                </div>
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium border border-emerald-100 shadow-sm">
+                  <ShieldCheck className="w-4 h-4" />
+                  数据安全隔离，仅您可见
+                </div>
+              </div>
+
+              {/* Omni-network Monitoring Section */}
+              <div className="mb-10 bg-gradient-to-br from-zinc-900 to-zinc-800 p-8 rounded-[2rem] shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
+                <div className="relative z-10 flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-emerald-400" />
+                    全网品牌动态监听 (Live Data Feed)
+                  </h3>
+                  <span className="flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    实时感知中
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                  <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-zinc-300 bg-white/10 px-2 py-0.5 rounded uppercase">新品发布</span>
+                      <span className="text-xs text-zinc-400">10 分钟前</span>
+                    </div>
+                    <p className="text-sm text-white font-medium mb-1">喜茶 x 原神 联名第二弹预热</p>
+                    <p className="text-xs text-zinc-400">AI 提取标签: #二次元 #游戏IP #年轻化</p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-zinc-300 bg-white/10 px-2 py-0.5 rounded uppercase">营销战役</span>
+                      <span className="text-xs text-zinc-400">1 小时前</span>
+                    </div>
+                    <p className="text-sm text-white font-medium mb-1">lululemon 开启「夏日乐章」百城瑜伽</p>
+                    <p className="text-xs text-zinc-400">AI 提取标签: #女性健康 #社群营销 #线下体验</p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-zinc-300 bg-white/10 px-2 py-0.5 rounded uppercase">高管变动</span>
+                      <span className="text-xs text-zinc-400">3 小时前</span>
+                    </div>
+                    <p className="text-sm text-white font-medium mb-1">某头部新消费美妆品牌 CMO 离职</p>
+                    <p className="text-xs text-zinc-400">AI 提示: 合作策略可能发生调整，建议观望</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Multimodal Asset Upload */}
+              <div className="mb-10 bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-violet-500" />
+                    多模态资产注入 (Multimodal Ingestion)
+                  </h3>
+                  <span className="text-xs text-zinc-500">支持文本、音频、视频，AI 自动转化为高维向量</span>
+                </div>
+                
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={resourceInput}
+                      onChange={(e) => setResourceInput(e.target.value)}
+                      placeholder="输入文本需求、品牌介绍或粘贴网址..."
+                      className="w-full bg-zinc-50/50 border border-zinc-200 rounded-2xl px-5 py-4 text-[15px] text-zinc-900 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-300 transition-all"
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddResource()}
+                      disabled={isExtractingResource}
+                    />
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <label className="flex items-center justify-center w-14 h-14 bg-zinc-50 border border-zinc-200 rounded-2xl cursor-pointer hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-violet-600 group relative">
+                      <Paperclip className="w-5 h-5" />
+                      <input type="file" className="hidden" accept="video/*,audio/*,image/*,.pdf,.doc,.docx" />
+                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">上传音视频/文档</span>
+                    </label>
+                    <button
+                      onClick={handleAddResource}
+                      disabled={isExtractingResource || !resourceInput.trim()}
+                      className="bg-zinc-950 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-zinc-800 transition-all disabled:opacity-50 flex items-center gap-2 shadow-md h-14"
+                    >
+                      {isExtractingResource ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+                      向量化入库
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Vectorization Visualization */}
+                <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-violet-900 mb-1">AI 深度理解与向量化</p>
+                    <p className="text-xs text-violet-700/80">上传的音视频和文档将被 AI 拆解为多维特征向量，用于暗池中的微秒级精准匹配，超越传统的关键词搜索。</p>
+                  </div>
+                </div>
+              </div>
+
+              <ResourceDashboard knowledgeBase={knowledgeBase} />
+
+              {knowledgeBase.length === 0 ? (
+                <div className="text-center py-32 bg-white rounded-[2.5rem] border border-zinc-200 border-dashed shadow-sm">
+                  <Database className="w-16 h-16 text-zinc-200 mx-auto mb-6" />
+                  <h3 className="text-xl font-semibold text-zinc-900">资源库为空</h3>
+                  <p className="text-zinc-500 mt-3 max-w-md mx-auto">
+                    请在“需求对话”界面与AI交互，或上传文件，AI将自动为您提取结构化的营销需求并存入此处。
+                  </p>
+                  <button 
+                    onClick={() => setActiveTab('chat')}
+                    className="mt-8 px-8 py-3 bg-zinc-950 text-white rounded-full font-medium hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/20"
+                  >
+                    去输入需求
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-8">
+                  {knowledgeBase.map((need, index) => (
+                    <EditableNeedCard 
+                      key={need.id} 
+                      need={need} 
+                      index={index} 
+                      userPlan={userPlan}
+                      onUpgrade={() => setShowUpgradeModal(true)}
+                      onUpdate={(updatedNeed) => {
+                        setKnowledgeBase(prev => prev.map(n => n.id === updatedNeed.id ? updatedNeed : n));
+                      }}
+                      onDelete={(id) => {
+                        setKnowledgeBase(prev => prev.filter(n => n.id !== id));
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Matchmaking Tab */}
+        {activeTab === 'matchmaking' && (
+          <div className="flex-1 overflow-y-auto p-12">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-10 flex items-end justify-between">
+                <div>
+                  <h2 className="text-4xl font-bold text-zinc-900 tracking-tight">跨界撮合与策略</h2>
+                  <p className="text-zinc-500 mt-3 text-lg">基于您的资源库，AI为您量身定制的跨界营销合作方案。</p>
+                </div>
+                {matchmaking.length > 0 && (
+                  <button 
+                    onClick={handleGenerateMatchmaking}
+                    disabled={isGeneratingMatch}
+                    className="px-6 py-3 bg-white border border-zinc-200 rounded-2xl text-[15px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                  >
+                    {isGeneratingMatch ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 text-amber-500" />}
+                    重新生成
+                  </button>
+                )}
+              </div>
+
+              {/* Expert Matchmaking Banner */}
+              <div className="mb-10 bg-gradient-to-r from-zinc-900 to-zinc-950 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
+                <div className="relative z-10 md:w-2/3 mb-6 md:mb-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="w-5 h-5 text-amber-400" />
+                    <h3 className="text-xl font-bold text-white">高定专家撮合服务 (Human-in-the-loop)</h3>
+                  </div>
+                  <p className="text-zinc-400 text-sm leading-relaxed">
+                    对于千万级预算或S级战略合作，AI 筛选后由资深营销专家介入。提供深度背调、高层直接对接、定制化商业谈判支持。按效果收取成功佣金 (Success Fee)。
+                  </p>
+                </div>
+                <div className="relative z-10 shrink-0">
+                  <button className="px-6 py-3 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                    预约专家咨询
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {matchmaking.length === 0 ? (
+                <div className="text-center py-32 bg-white rounded-[2.5rem] border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                  <Zap className="w-16 h-16 text-amber-400 mx-auto mb-6" />
+                  <h3 className="text-xl font-semibold text-zinc-900">暂无撮合方案</h3>
+                  <p className="text-zinc-500 mt-3 max-w-md mx-auto mb-8">
+                    请先确保资源库中有结构化的营销需求，然后点击左下角的“一键生成营销策略”按钮。
+                  </p>
+                  {knowledgeBase.length === 0 ? (
+                    <button 
+                      onClick={() => setActiveTab('chat')}
+                      className="px-8 py-4 bg-zinc-900 text-white font-bold rounded-2xl hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/20"
+                    >
+                      去建立资源库
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleGenerateMatchmaking}
+                      disabled={isGeneratingMatch}
+                      className="px-8 py-4 bg-amber-500 text-white font-bold rounded-2xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-2 mx-auto"
+                    >
+                      {isGeneratingMatch ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                      一键生成营销策略
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-10">
+                  {/* Unverified Banner */}
+                  {knowledgeBase.some(need => !need.isVerified) && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-3xl p-6 flex items-center justify-between shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-amber-900 mb-1">完成品牌资产认证，解锁更高质量匹配</h4>
+                          <p className="text-sm text-amber-700/80">绑定真实社交资产，可使您的跨界合作被邀约率提升 300%。</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setActiveTab('knowledge')}
+                        className="px-6 py-2.5 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-sm shrink-0"
+                      >
+                        去认证
+                      </button>
+                    </div>
+                  )}
+
+                  {matchmaking.map((match, index) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={match.id} 
+                      className="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/60 overflow-hidden hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-300"
+                    >
+                      <div className="bg-[#0A0A0B] p-10 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-rose-500/20 to-violet-500/20 rounded-full blur-3xl" />
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-4 mb-6">
+                            <span className="bg-white/10 border border-white/10 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest backdrop-blur-md">
+                              推荐方案 #{index + 1}
+                            </span>
+                            {index === 0 && (
+                              <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest backdrop-blur-md flex items-center gap-1">
+                                <Crown className="w-3 h-3" />
+                                精选推荐
+                              </span>
+                            )}
+                            <span className="text-rose-300 text-[15px] font-semibold flex items-center gap-1.5">
+                              <Sparkles className="w-4 h-4" />
+                              预估 ROI: {match.estimatedROI}
+                            </span>
+                          </div>
+                          <h3 className="text-4xl font-bold tracking-tight mb-3">与 {match.partnerCompany} 跨界合作</h3>
+                          <p className="text-zinc-400 text-lg font-medium">合作方行业: {match.partnerIndustry}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
+                        <div className="lg:col-span-1 space-y-8">
+                          {match.matchScores && (
+                            <div>
+                              <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-4 uppercase tracking-wider">
+                                <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+                                多维匹配度
+                              </h4>
+                              <div className="relative h-64 bg-zinc-50 rounded-2xl border border-zinc-100 p-4 overflow-hidden">
+                                <div className={cn("h-full w-full transition-all", userPlan === 'free' && "blur-md opacity-50")}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                                      { subject: '受众重合度', A: match.matchScores.audience, fullMark: 100 },
+                                      { subject: '品牌调性', A: match.matchScores.brandTone, fullMark: 100 },
+                                      { subject: '预算体量', A: match.matchScores.budget, fullMark: 100 },
+                                      { subject: '资源互补', A: match.matchScores.complementarity, fullMark: 100 },
+                                    ]}>
+                                      <PolarGrid stroke="#e4e4e7" />
+                                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 12 }} />
+                                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                      <Radar name="匹配度" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+                                      <Tooltip />
+                                    </RadarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                                {userPlan === 'free' && (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] z-10">
+                                    <Lock className="w-8 h-8 text-violet-500 mb-2" />
+                                    <p className="text-sm font-bold text-zinc-900 mb-3">升级 Pro 解锁多维匹配雷达</p>
+                                    <button onClick={() => setShowUpgradeModal(true)} className="px-4 py-2 bg-violet-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-violet-700 transition-colors">
+                                      立即升级
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-4 uppercase tracking-wider">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                              匹配理由
+                            </h4>
+                            <p className="text-[15px] text-zinc-600 leading-relaxed bg-zinc-50 p-5 rounded-2xl border border-zinc-100">
+                              {match.matchReason}
+                            </p>
+                          </div>
+                          
+                          {match.similarCase && (
+                            <div>
+                              <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-4 uppercase tracking-wider">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                相似成功案例
+                              </h4>
+                              <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                                <p className="font-bold text-blue-900 mb-2">{match.similarCase.brands}</p>
+                                <p className="text-[14px] text-blue-800 leading-relaxed">
+                                  {match.similarCase.description}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-4 uppercase tracking-wider">
+                              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                              下一步建议
+                            </h4>
+                            <p className="text-[15px] text-amber-900 leading-relaxed bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                              {match.recommendedAction}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="lg:col-span-2 space-y-8">
+                          <div>
+                            <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2 mb-4 uppercase tracking-wider">
+                              <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+                              详细营销策略
+                            </h4>
+                            <div className="prose prose-sm max-w-none text-zinc-600 prose-headings:text-zinc-900 prose-strong:text-zinc-900 bg-white border border-zinc-100 p-8 rounded-3xl shadow-sm">
+                              <ReactMarkdown>{match.strategy}</ReactMarkdown>
+                            </div>
+                          </div>
+
+                          {/* Status and Actions */}
+                          <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-bold text-zinc-700 uppercase tracking-wider">当前状态:</span>
+                              <span className={cn(
+                                "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                                match.status === 'suggested' && "bg-zinc-200 text-zinc-700",
+                                match.status === 'invited' && "bg-blue-100 text-blue-700",
+                                match.status === 'accepted' && "bg-emerald-100 text-emerald-700",
+                                match.status === 'rejected' && "bg-rose-100 text-rose-700",
+                              )}>
+                                {match.status === 'suggested' && 'AI 推荐'}
+                                {match.status === 'invited' && '已发送邀请'}
+                                {match.status === 'accepted' && '对方已确认'}
+                                {match.status === 'rejected' && '对方已婉拒'}
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap justify-end gap-3">
+                              {match.status === 'suggested' && (
+                                <>
+                                  <button 
+                                    onClick={() => handleGeneratePitchDeck(match)}
+                                    disabled={generatingPitchDeckId === match.id}
+                                    className="flex items-center gap-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 px-5 py-2.5 rounded-xl transition-colors border border-rose-200/50"
+                                  >
+                                    {generatingPitchDeckId === match.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
+                                    {match.pitchDeck ? "重新生成邀请函" : "消耗 1 点数发送邀请"}
+                                  </button>
+                                  {match.pitchDeck && (
+                                    <button 
+                                      onClick={() => handleStatusChange(match.id, 'invited')}
+                                      className="flex items-center gap-2 text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800 px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                                    >
+                                      发送邀请
+                                    </button>
+                                  )}
+                                </>
+                              )}
+
+                              {match.status === 'invited' && (
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => handleStatusChange(match.id, 'accepted')}
+                                    className="flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-5 py-2.5 rounded-xl transition-colors border border-emerald-200/50"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    模拟对方接受
+                                  </button>
+                                  <button 
+                                    onClick={() => handleStatusChange(match.id, 'rejected')}
+                                    className="flex items-center gap-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 px-5 py-2.5 rounded-xl transition-colors border border-rose-200/50"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    模拟对方婉拒
+                                  </button>
+                                </div>
+                              )}
+
+                              {match.status === 'accepted' && (
+                                <>
+                                  <button 
+                                    onClick={() => userPlan === 'pro' ? handleGenerateMoU(match) : setShowUpgradeModal(true)}
+                                    disabled={generatingMoUId === match.id}
+                                    className={cn(
+                                      "flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors border",
+                                      userPlan === 'pro' 
+                                        ? "text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200/50" 
+                                        : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border-zinc-200"
+                                    )}
+                                  >
+                                    {generatingMoUId === match.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (userPlan === 'pro' ? <FileText className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
+                                    {match.mou ? "重新生成 MoU" : "生成合作备忘录 (MoU)"}
+                                  </button>
+                                  <button 
+                                    onClick={() => userPlan === 'pro' ? handleGenerateTimeline(match) : setShowUpgradeModal(true)}
+                                    disabled={generatingTimelineId === match.id}
+                                    className={cn(
+                                      "flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors border",
+                                      userPlan === 'pro' 
+                                        ? "text-teal-700 bg-teal-50 hover:bg-teal-100 border-teal-200/50" 
+                                        : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border-zinc-200"
+                                    )}
+                                  >
+                                    {generatingTimelineId === match.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (userPlan === 'pro' ? <Calendar className="w-4 h-4" /> : <Lock className="w-4 h-4" />)}
+                                    {match.timeline ? "重新生成排期" : "生成执行排期"}
+                                  </button>
+                                </>
+                              )}
+                              
+                              <button 
+                                onClick={() => handleRefinePlan(match)}
+                                disabled={refiningId === match.id}
+                                className="flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-5 py-2.5 rounded-xl transition-colors border border-amber-200/50"
+                              >
+                                {refiningId === match.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {match.refinedDetails ? "重新细化方案" : "AI 细化方案"}
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Pitch Deck Details */}
+                          {match.pitchDeck && (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-6 pt-6 border-t border-zinc-100"
+                            >
+                              <h4 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                <Send className="w-4 h-4 text-rose-500" />
+                                合作邀请函 (Pitch Deck)
+                              </h4>
+                              <div className="prose prose-sm max-w-none text-zinc-600 prose-headings:text-zinc-900 prose-strong:text-zinc-900 bg-rose-50/50 border border-rose-100/50 p-8 rounded-3xl shadow-sm">
+                                <ReactMarkdown>{match.pitchDeck}</ReactMarkdown>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* MoU Details */}
+                          {match.mou && (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-6 pt-6 border-t border-zinc-100"
+                            >
+                              <h4 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                <FileText className="w-4 h-4 text-indigo-500" />
+                                合作备忘录草案 (MoU)
+                              </h4>
+                              <div className="prose prose-sm max-w-none text-zinc-600 prose-headings:text-zinc-900 prose-strong:text-zinc-900 bg-indigo-50/50 border border-indigo-100/50 p-8 rounded-3xl shadow-sm">
+                                <ReactMarkdown>{match.mou}</ReactMarkdown>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* Timeline Details */}
+                          {match.timeline && (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-6 pt-6 border-t border-zinc-100"
+                            >
+                              <h4 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                <Calendar className="w-4 h-4 text-teal-500" />
+                                联合营销执行排期
+                              </h4>
+                              <div className="bg-teal-50/50 border border-teal-100/50 p-8 rounded-3xl shadow-sm">
+                                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-teal-200 before:to-transparent">
+                                  {match.timeline.map((item, i) => (
+                                    <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                      <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-teal-100 text-teal-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                                        <span className="text-xs font-bold">{i + 1}</span>
+                                      </div>
+                                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-2xl border border-teal-100 shadow-sm">
+                                        <div className="flex items-center justify-between space-x-2 mb-1">
+                                          <div className="font-bold text-teal-900">{item.date}</div>
+                                        </div>
+                                        <div className="text-zinc-600 text-sm">{item.task}</div>
+                                        {(item.task.includes('设计') || item.task.includes('制作') || item.task.includes('投放') || item.task.includes('物料') || item.task.includes('宣发')) && (
+                                          <button className="mt-3 text-[11px] font-bold text-violet-600 bg-violet-50 px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-violet-100 transition-colors border border-violet-100">
+                                            <ExternalLink className="w-3 h-3" /> 
+                                            寻源优质服务商
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* Refined Details */}
+                          {match.refinedDetails && (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-6 pt-6 border-t border-zinc-100"
+                            >
+                              <h4 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                <Sparkles className="w-4 h-4 text-amber-500" />
+                                AI 细化执行方案
+                              </h4>
+                              <div className="prose prose-sm max-w-none text-zinc-600 prose-headings:text-zinc-900 prose-strong:text-zinc-900 bg-amber-50/50 border border-amber-100/50 p-8 rounded-3xl shadow-sm">
+                                <ReactMarkdown>{match.refinedDetails}</ReactMarkdown>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* ROI Calculator */}
+                          <ROICalculator />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+              
+              {matchmaking.length > 0 && (
+                <div className="mt-16 pt-12 border-t border-zinc-200/50">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-2xl font-bold text-zinc-900 tracking-tight flex items-center gap-2">
+                        <Sparkles className="w-6 h-6 text-violet-500" />
+                        精选营销服务商
+                      </h3>
+                      <p className="text-zinc-500 mt-2">为您推荐优质的第三方服务机构，助力跨界合作高效落地。</p>
+                    </div>
+                    <button className="text-sm font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1">
+                      查看全部 <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      { name: '奥美公关 (Ogilvy)', type: '全案营销', desc: '全球领先的整合营销传播公司，擅长大型跨界战役策划。', tags: ['品牌公关', '创意策划'] },
+                      { name: '无忧传媒', type: 'MCN 机构', desc: '国内头部 MCN，拥有海量达人资源，适合社交媒体种草与直播带货。', tags: ['达人分发', '直播带货'] },
+                      { name: '特赞 (Tezign)', type: '内容创意', desc: '科技赋能的内容创意平台，快速对接海量优秀设计师与创意人。', tags: ['视觉设计', '视频制作'] }
+                    ].map((provider, i) => (
+                      <div key={i} className="bg-white p-6 rounded-3xl border border-zinc-200/60 hover:border-violet-300 hover:shadow-lg transition-all group cursor-pointer">
+                        <div className="flex justify-between items-start mb-4">
+                          <h4 className="font-bold text-zinc-900 text-lg group-hover:text-violet-600 transition-colors">{provider.name}</h4>
+                          <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-md uppercase tracking-wider">{provider.type}</span>
+                        </div>
+                        <p className="text-sm text-zinc-500 mb-6 line-clamp-2">{provider.desc}</p>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex gap-2">
+                            {provider.tags.map(tag => (
+                              <span key={tag} className="text-[11px] text-zinc-400 bg-zinc-50 border border-zinc-100 px-2 py-1 rounded-md">{tag}</span>
+                            ))}
+                          </div>
+                          <button className="w-8 h-8 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Agent Tab */}
+        {activeTab === 'agent' && (
+          <div className="flex-1 overflow-y-auto p-12">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-10 flex items-end justify-between">
+                <div>
+                  <h2 className="text-4xl font-bold text-zinc-900 tracking-tight flex items-center gap-3">
+                    <Bot className="w-8 h-8 text-emerald-500" />
+                    专属数字分身 (Digital Twin BD)
+                  </h2>
+                  <p className="text-zinc-500 mt-3 text-lg">全天候自治商务智能体，在暗池中为您静默寻址、自动预谈判。</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold border border-emerald-100 shadow-sm">
+                    <span className="flex h-2.5 w-2.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    Agent 活跃拓展中
+                  </div>
+                  <div className="text-xs text-zinc-500 flex items-center gap-1.5 bg-zinc-50 px-3 py-1.5 rounded-md border border-zinc-100">
+                    <Activity className="w-3 h-3 text-emerald-500" />
+                    <span className="animate-pulse">{agentStatus}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Agent Configuration */}
+                <div className="lg:col-span-1 space-y-6">
+                  <div className="bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                    <h3 className="text-lg font-bold text-zinc-900 mb-6 flex items-center gap-2">
+                      <Settings2 className="w-5 h-5 text-zinc-400" />
+                      智能体边界设定
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <label className="text-sm font-bold text-zinc-700">最低受众重合度</label>
+                          <span className="text-sm font-bold text-emerald-600">80%</span>
+                        </div>
+                        <input type="range" min="50" max="100" defaultValue="80" className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                        <p className="text-xs text-zinc-500 mt-2">低于此阈值的合作方将被 Agent 自动否决。</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="text-sm font-bold text-zinc-700 block">多级预算底线设定 (元)</label>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <span className="text-xs text-zinc-500 mb-1 block">首轮试探</span>
+                            <input type="number" defaultValue="20000" className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none" />
+                          </div>
+                          <div>
+                            <span className="text-xs text-zinc-500 mb-1 block">期望达成</span>
+                            <input type="number" defaultValue="35000" className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none" />
+                          </div>
+                          <div>
+                            <span className="text-xs text-zinc-500 mb-1 block">最高红线</span>
+                            <input type="number" value={maxBudget} onChange={(e) => setMaxBudget(Number(e.target.value))} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-2">Agent 将执行动态退让策略，逼近红线时自动要求对方增加对等权益（Value Trade-off）。</p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-bold text-zinc-700 block mb-2">绝对排斥竞品名单</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {['瑞幸咖啡', '库迪咖啡'].map(brand => (
+                            <span key={brand} className="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-md flex items-center gap-1">
+                              {brand} <X className="w-3 h-3 cursor-pointer hover:text-rose-800" />
+                            </span>
+                          ))}
+                        </div>
+                        <input type="text" placeholder="输入品牌名称回车添加" className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none" />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-bold text-zinc-700">沟通人设 (Persona)</label>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => setShowPersonaPreviewModal(true)}
+                              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              预览话术
+                            </button>
+                            <button 
+                              onClick={startSimulation}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md transition-colors"
+                            >
+                              <Zap className="w-3 h-3" />
+                              模拟实战谈判
+                            </button>
+                          </div>
+                        </div>
+                        <select 
+                          value={selectedPersona}
+                          onChange={(e) => setSelectedPersona(e.target.value)}
+                          className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none appearance-none"
+                        >
+                          <option value="活泼网感的消费品牌 PR">活泼网感的消费品牌 PR</option>
+                          <option value="专业严谨的 500 强高管">专业严谨的 500 强高管</option>
+                          <option value="真诚务实的创业者">真诚务实的创业者</option>
+                        </select>
+                        <p className="text-xs text-zinc-500 mt-2">AI 将以此人设在暗池中与其他品牌进行预谈判。</p>
+                        
+                        <div className="mt-4 p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-4">
+                          <div>
+                            <label className="text-xs font-bold text-zinc-700 block mb-1">负面约束清单 (Negative Prompts)</label>
+                            <textarea 
+                              defaultValue="禁用任何表情符号；禁用“亲亲/宝子”等词汇；回复字数控制在80字以内；多用短句和数据。"
+                              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none resize-none h-16"
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1">严格控制 Tone of Voice，防止人设漂移。</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-zinc-700 block mb-1">品牌专有词库 (Glossary)</label>
+                            <textarea 
+                              defaultValue="核心Slogan: 探索无限可能；专有产品名: Rockcent AI"
+                              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none resize-none h-12"
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1">作为高权重资产注入长期记忆，确保对外发声绝对准确。</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button className="w-full py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors shadow-md">
+                        保存设定
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Autonomous Opportunities */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-amber-500" />
+                        高优意向单推送 (Golden Handoff)
+                      </h3>
+                      <span className="text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">
+                        2 个待审批
+                      </span>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Opportunity 1 */}
+                      <div className="border border-zinc-200 rounded-2xl p-6 hover:border-emerald-300 transition-colors">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-xl font-bold text-zinc-900">OATLY 噢麦力</h4>
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider border border-emerald-100">匹配度 92%</span>
+                            </div>
+                            <p className="text-sm text-zinc-500">植物基燕麦奶领导品牌</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">预估 ROI</div>
+                            <div className="text-xl font-black text-emerald-600">3.5x</div>
+                          </div>
+                        </div>
+
+                        <div className="bg-zinc-50 rounded-xl p-4 mb-6 border border-zinc-100">
+                          <h5 className="text-xs font-bold text-zinc-700 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                            <Bot className="w-4 h-4 text-zinc-400" />
+                            AI 预谈判复盘摘要
+                          </h5>
+                          <ul className="space-y-3 text-sm text-zinc-600">
+                            <li className="flex gap-2">
+                              <span className="text-blue-500 font-bold shrink-0">破冰策略:</span> 
+                              <span>使用数据驱动与社交背书开场：“系统测算我们两家受众重合度达 82%。注意到贵司近期与某咖啡品牌有精彩联动，作为长期合作伙伴，我们认为有一个高潜力机会。”</span>
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="text-emerald-500 font-bold shrink-0">价值置换:</span> 
+                              <span>对方逼近 5 万红线时，Agent 触发动态退让：“可以追加 2 万预算，但我们需要贵司提供双微头条矩阵首发。”</span>
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="text-amber-500 font-bold shrink-0">熔断触发:</span> 
+                              <span>检测到对方连续两轮未在核心条件让步，Agent 触发体面离场：“细节已记录，接下来我将拉入我方业务负责人进行深度对齐。”</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-500/20">
+                            一键接管谈判 (生成 MoU)
+                          </button>
+                          <button className="px-6 py-3 bg-white border border-zinc-200 text-zinc-600 rounded-xl font-bold hover:bg-zinc-50 transition-colors">
+                            否决并优化策略
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Opportunity 2 */}
+                      <div className="border border-zinc-200 rounded-2xl p-6 hover:border-emerald-300 transition-colors">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-xl font-bold text-zinc-900">Keep</h4>
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider border border-emerald-100">匹配度 88%</span>
+                            </div>
+                            <p className="text-sm text-zinc-500">运动科技平台</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">预估 ROI</div>
+                            <div className="text-xl font-black text-emerald-600">2.8x</div>
+                          </div>
+                        </div>
+
+                        <div className="bg-zinc-50 rounded-xl p-4 mb-6 border border-zinc-100">
+                          <h5 className="text-xs font-bold text-zinc-700 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                            <Bot className="w-4 h-4 text-zinc-400" />
+                            AI 预谈判复盘摘要
+                          </h5>
+                          <ul className="space-y-3 text-sm text-zinc-600">
+                            <li className="flex gap-2">
+                              <span className="text-blue-500 font-bold shrink-0">破冰策略:</span> 
+                              <span>直接抛出数学契合度：“系统测算我们两家受众重合度达 88%，且贵司近期主推的春季燃脂活动与我方新品调性高度一致。”</span>
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="text-emerald-500 font-bold shrink-0">价值置换:</span> 
+                              <span>对方要求 10 万元奖品赞助，Agent 拒绝纯赞助并提出置换：“我们可以提供 3 万元奖品，但需要置换贵司 App 内开屏广告 1 天及挑战赛冠名权。”</span>
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="text-amber-500 font-bold shrink-0">熔断触发:</span> 
+                              <span>对方同意该置换方案，达成初步意向。Agent 触发体面离场：“针对这部分的细节，我已经记录了贵司的诉求，接下来我将拉入我方业务负责人进行深度对齐。”</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-500/20">
+                            一键接管谈判 (生成 MoU)
+                          </button>
+                          <button className="px-6 py-3 bg-white border border-zinc-200 text-zinc-600 rounded-xl font-bold hover:bg-zinc-50 transition-colors">
+                            否决并优化策略
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Network Tab */}
+        {activeTab === 'network' && (
+          <div className="flex-1 overflow-y-auto p-12">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-10">
+                <h2 className="text-4xl font-bold text-zinc-900 tracking-tight flex items-center gap-3">
+                  <Network className="w-8 h-8 text-blue-500" />
+                  品牌朋友圈 (Brand Social Graph)
+                </h2>
+                <p className="text-zinc-500 mt-3 text-lg">打破信息孤岛，看清您在商业生态中的位置，AI 助您发起多边联合战役。</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Graph & Tribes */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* Dynamic Brand Social Graph -> Industry Influence Heatmap */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-blue-500" />
+                        行业影响力热力图 (Influence Heatmap)
+                      </h3>
+                      <button className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        查看完整图谱 <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Heatmap Visualization */}
+                    <div className="relative h-80 bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden flex items-center justify-center mb-6">
+                      <div className="absolute inset-0 bg-[radial-gradient(#3f3f46_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
+                      
+                      {/* Heat Zones (Circles) */}
+                      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+                      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-rose-500/20 rounded-full blur-3xl"></div>
+                      <div className="absolute top-1/2 left-2/3 w-56 h-56 bg-amber-500/20 rounded-full blur-3xl"></div>
+
+                      {/* Zone Labels */}
+                      <div className="absolute top-8 left-8 text-blue-400/60 text-xs font-bold tracking-widest uppercase">早C晚A圈 (中心度: 高)</div>
+                      <div className="absolute bottom-8 right-8 text-rose-400/60 text-xs font-bold tracking-widest uppercase">户外露营圈 (中心度: 中)</div>
+                      <div className="absolute top-12 right-12 text-amber-400/60 text-xs font-bold tracking-widest uppercase">高净值车主圈 (中心度: 低)</div>
+
+                      {/* Connecting Lines (SVG) */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                        {/* Lines from You */}
+                        <line x1="50%" y1="50%" x2="30%" y2="35%" stroke="#60A5FA" strokeWidth="2" strokeDasharray="4 4" />
+                        <line x1="50%" y1="50%" x2="70%" y2="70%" stroke="#FB7185" strokeWidth="2" strokeDasharray="4 4" />
+                        <line x1="50%" y1="50%" x2="75%" y2="30%" stroke="#FBBF24" strokeWidth="1" strokeDasharray="2 2" />
+                        {/* Cross-circle lines */}
+                        <line x1="30%" y1="35%" x2="20%" y2="60%" stroke="#60A5FA" strokeWidth="1" />
+                        <line x1="30%" y1="35%" x2="45%" y2="20%" stroke="#60A5FA" strokeWidth="1" />
+                        <line x1="70%" y1="70%" x2="85%" y2="55%" stroke="#FB7185" strokeWidth="1" />
+                        <line x1="75%" y1="30%" x2="85%" y2="55%" stroke="#FBBF24" strokeWidth="1" />
+                      </svg>
+
+                      {/* Central Node: You */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer hover:scale-110 transition-transform">
+                        <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] border-4 border-zinc-800">
+                          <span className="text-zinc-900 font-black text-sm">您</span>
+                        </div>
+                        <div className="absolute -inset-4 border border-zinc-700 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                      </div>
+
+                      {/* Node: 瑞幸 (早C晚A圈) */}
+                      <div 
+                        className="absolute top-[35%] left-[30%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: '瑞幸咖啡', industry: '食品饮料', reach: '1.2亿', centrality: '极高', tags: ['早C晚A', '年轻化', '高频消费'], color: 'blue' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-14 h-14 bg-blue-900/80 rounded-full flex items-center justify-center border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)] group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <Coffee className="w-6 h-6 text-blue-300" />
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-center">
+                          <span className="text-xs font-bold text-blue-100 whitespace-nowrap bg-zinc-900/80 px-2 py-0.5 rounded">瑞幸咖啡</span>
+                          <div className="text-[9px] text-blue-300/80 mt-0.5">辐射: 1.2亿</div>
+                        </div>
+                      </div>
+
+                      {/* Node: 燕京啤酒 (早C晚A圈) */}
+                      <div 
+                        className="absolute top-[60%] left-[20%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: '燕京啤酒', industry: '食品饮料', reach: '8000万', centrality: '高', tags: ['早C晚A', '精酿', '线下聚会'], color: 'blue' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-10 h-10 bg-blue-900/60 rounded-full flex items-center justify-center border border-blue-500/50 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <Beer className="w-4 h-4 text-blue-300" />
+                        </div>
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-[10px] font-medium text-blue-200 whitespace-nowrap">燕京啤酒</span>
+                      </div>
+
+                      {/* Node: OATLY (早C晚A圈) */}
+                      <div 
+                        className="absolute top-[20%] left-[45%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: 'OATLY', industry: '食品饮料', reach: '5000万', centrality: '高', tags: ['植物基', '健康环保', '咖啡伴侣'], color: 'blue' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-12 h-12 bg-blue-900/70 rounded-full flex items-center justify-center border border-blue-400/80 shadow-[0_0_15px_rgba(96,165,250,0.2)] group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <span className="text-blue-200 font-bold text-xs">OATLY</span>
+                        </div>
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-[10px] font-medium text-blue-200 whitespace-nowrap">OATLY</span>
+                      </div>
+
+                      {/* Node: 牧高笛 (户外露营圈) */}
+                      <div 
+                        className="absolute top-[70%] left-[70%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: '牧高笛', industry: '运动户外', reach: '3000万', centrality: '高', tags: ['精致露营', '中产家庭', '自然美学'], color: 'rose' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-14 h-14 bg-rose-900/80 rounded-full flex items-center justify-center border-2 border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.4)] group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <Tent className="w-6 h-6 text-rose-300" />
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-center">
+                          <span className="text-xs font-bold text-rose-100 whitespace-nowrap bg-zinc-900/80 px-2 py-0.5 rounded">牧高笛</span>
+                          <div className="text-[9px] text-rose-300/80 mt-0.5">辐射: 3000万</div>
+                        </div>
+                      </div>
+
+                      {/* Node: lululemon (户外露营圈) */}
+                      <div 
+                        className="absolute top-[55%] left-[85%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: 'lululemon', industry: '运动户外', reach: '4500万', centrality: '极高', tags: ['瑜伽', '女性健康', '社群文化'], color: 'rose' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-12 h-12 bg-rose-900/60 rounded-full flex items-center justify-center border border-rose-500/50 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <span className="text-rose-200 font-bold text-[10px]">lulu</span>
+                        </div>
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-[10px] font-medium text-rose-200 whitespace-nowrap">lululemon</span>
+                      </div>
+
+                      {/* Node: 蔚来 (高净值车主圈) */}
+                      <div 
+                        className="absolute top-[30%] left-[75%] -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer group"
+                        onClick={() => {
+                          setSelectedBrandDetail({ name: '蔚来汽车', industry: '汽车出行', reach: '1000万', centrality: '中', tags: ['新能源', '高净值', '生活方式'], color: 'amber' });
+                          setShowBrandDetailModal(true);
+                        }}
+                      >
+                        <div className="w-12 h-12 bg-amber-900/80 rounded-full flex items-center justify-center border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] group-hover:scale-110 transition-transform backdrop-blur-sm">
+                          <Car className="w-5 h-5 text-amber-300" />
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-center">
+                          <span className="text-xs font-bold text-amber-100 whitespace-nowrap bg-zinc-900/80 px-2 py-0.5 rounded">蔚来</span>
+                          <div className="text-[9px] text-amber-300/80 mt-0.5">辐射: 1000万</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Link Prediction */}
+                    <div className="bg-blue-50 rounded-xl p-5 border border-blue-100">
+                      <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-blue-600" />
+                        六度空间智能引荐
+                      </h4>
+                      <p className="text-sm text-blue-800 mb-3">
+                        AI 发现您可能想联系 <span className="font-bold">蔚来汽车</span>。通过您的长期盟友 <span className="font-bold">OATLY</span> 进行引荐，成功率预计提升 60%。
+                      </p>
+                      <button 
+                        onClick={() => setShowIcebreakerModal(true)}
+                        className="px-4 py-2 bg-white text-blue-600 rounded-lg text-sm font-bold border border-blue-200 hover:bg-blue-50 transition-colors"
+                      >
+                        生成破冰话术
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Generative Multi-sided Tribes */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-violet-500" />
+                        生成式多边部落 (AI 发起)
+                      </h3>
+                      <span className="text-xs font-bold bg-violet-100 text-violet-700 px-3 py-1 rounded-full">
+                        1 个新提议
+                      </span>
+                    </div>
+
+                    <div className="border border-violet-200 rounded-2xl p-6 bg-gradient-to-br from-white to-violet-50/30">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">自治型群组造浪</span>
+                            <span className="text-xs text-zinc-500">AI 测算受众重合度: 85%</span>
+                          </div>
+                          <h4 className="text-2xl font-bold text-zinc-900">「早C晚A」都市逃离计划</h4>
+                        </div>
+                        <div className="flex -space-x-2">
+                          <div className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white flex items-center justify-center z-30"><Coffee className="w-4 h-4 text-zinc-500" /></div>
+                          <div className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white flex items-center justify-center z-20"><Beer className="w-4 h-4 text-zinc-500" /></div>
+                          <div className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white flex items-center justify-center z-10"><Tent className="w-4 h-4 text-zinc-500" /></div>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-zinc-600 mb-6">
+                        AI 感知到您与 瑞幸咖啡、燕京啤酒、牧高笛 近期都有营销预算且受众高度互补。建议联合发起一场针对一二线城市白领的周末露营快闪活动。
+                      </p>
+
+                      <div className="bg-white rounded-xl p-4 border border-zinc-100 mb-6">
+                        <h5 className="text-xs font-bold text-zinc-700 mb-3 uppercase tracking-wider">智能资源分配建议</h5>
+                        <ul className="space-y-3">
+                          <li className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 text-zinc-600"><Coffee className="w-4 h-4 text-zinc-400" /> 瑞幸咖啡</span>
+                            <span className="font-medium text-zinc-900">提供早间特调 & 门店宣发</span>
+                          </li>
+                          <li className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 text-zinc-600"><Beer className="w-4 h-4 text-zinc-400" /> 燕京啤酒</span>
+                            <span className="font-medium text-zinc-900">提供晚间精酿 & 音乐派对赞助</span>
+                          </li>
+                          <li className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 text-zinc-600"><Tent className="w-4 h-4 text-zinc-400" /> 牧高笛</span>
+                            <span className="font-medium text-zinc-900">提供主会场天幕及露营装备</span>
+                          </li>
+                          <li className="flex items-center justify-between text-sm bg-violet-50 p-2 rounded-lg">
+                            <span className="flex items-center gap-2 text-violet-700 font-bold"><User className="w-4 h-4" /> 您 (本品牌)</span>
+                            <span className="font-bold text-violet-700">提供核心赠品 & 承接线上流量</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => setShowWarRoomModal(true)}
+                          className="flex-1 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors shadow-md shadow-violet-500/20"
+                        >
+                          进入虚拟研讨室
+                        </button>
+                        <button className="px-6 py-3 bg-white border border-zinc-200 text-zinc-600 rounded-xl font-bold hover:bg-zinc-50 transition-colors">
+                          忽略提议
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Lifecycle Agent */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white p-8 rounded-[2rem] border border-zinc-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full">
+                    <h3 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-rose-500" />
+                      全周期关系维护管家
+                    </h3>
+                    
+                    <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-zinc-200 before:to-transparent">
+                      
+                      {/* Event 1 */}
+                      <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active mb-8">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-rose-100 text-rose-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                          <Activity className="w-4 h-4" />
+                        </div>
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-zinc-900 text-sm">OATLY 噢麦力</span>
+                            <span className="text-[10px] text-zinc-400">2 小时前</span>
+                          </div>
+                          <p className="text-xs text-zinc-600 mb-3">
+                            刚刚发布了双十一战报，全网销售额破亿。
+                          </p>
+                          <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
+                            <p className="text-xs text-rose-800 font-medium mb-2 flex items-center gap-1">
+                              <Gift className="w-3 h-3" /> 一键生成社交礼物
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setSocialGiftType('poster');
+                                setShowSocialGiftModal(true);
+                              }}
+                              className="w-full py-2 bg-white text-rose-600 border border-rose-200 rounded-md text-xs font-bold hover:bg-rose-50 transition-colors"
+                            >
+                              生成联名祝贺海报
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Event 2 */}
+                      <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-zinc-100 text-zinc-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-zinc-900 text-sm">Keep</span>
+                            <span className="text-[10px] text-zinc-400">昨天</span>
+                          </div>
+                          <p className="text-xs text-zinc-600 mb-3">
+                            品牌成立 9 周年纪念日。
+                          </p>
+                          <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-200">
+                            <p className="text-xs text-zinc-700 font-medium mb-2 flex items-center gap-1">
+                              <MessageCircle className="w-3 h-3" /> 建议互动
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setSocialGiftType('weibo');
+                                setShowSocialGiftModal(true);
+                              }}
+                              className="w-full py-2 bg-white text-zinc-700 border border-zinc-300 rounded-md text-xs font-bold hover:bg-zinc-100 transition-colors"
+                            >
+                              发送微博互动抽奖方案
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Event 3 (Social Fission) */}
+                      <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-blue-100 text-blue-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                          <Share2 className="w-4 h-4" />
+                        </div>
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-zinc-900 text-sm">OATLY 噢麦力</span>
+                            <span className="text-[10px] text-zinc-400">刚刚</span>
+                          </div>
+                          <p className="text-xs text-zinc-600 mb-3">
+                            您的潜在盟友 OATLY 近期热度飙升，是否发送联名企划方案作为破冰礼物？
+                          </p>
+                          <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                            <p className="text-xs text-blue-800 font-medium mb-2 flex items-center gap-1">
+                              <Gift className="w-3 h-3" /> 社交裂变 (Social Fission)
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setShareStep(1);
+                                setShowShareGiftModal(true);
+                              }}
+                              className="w-full py-2 bg-blue-600 text-white border border-blue-700 rounded-md text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                              生成跨界预案盲盒并赠送
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Modals for Network Tab */}
+        <AnimatePresence>
+          {showPersonaPreviewModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-emerald-50/50">
+                  <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-emerald-500" />
+                    人设话术预览: {selectedPersona}
+                  </h3>
+                  <button onClick={() => setShowPersonaPreviewModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 bg-zinc-50/50 space-y-4">
+                  <div className="flex justify-center">
+                    <span className="bg-zinc-200/50 text-zinc-500 text-xs px-3 py-1 rounded-full font-medium">模拟场景：向潜在合作方发起初次邀约</span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
+                      <Bot className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-zinc-100 text-sm text-zinc-700 leading-relaxed">
+                      {selectedPersona === '活泼网感的消费品牌 PR' && (
+                        <>哈喽！系统测算我们两家受众重合度达82%，有个超高潜力的合作机会！✨ 注意到你们最近和OATLY的联动太绝了，作为OATLY的老朋友，我们觉得结合Rockcent AI绝对能火一把！探索无限可能，一起搞点事情呀？😎</>
+                      )}
+                      {selectedPersona === '专业严谨的 500 强高管' && (
+                        <>您好。系统测算我们两家受众重合度达85%，存在高潜力合作机会。注意到贵司近期与OATLY有精彩联动，作为OATLY长期合作伙伴，我们认为结合Rockcent AI能实现双赢。探索无限可能，期待探讨。</>
+                      )}
+                      {selectedPersona === '真诚务实的创业者' && (
+                        <>你好。系统测算我们两家受众重合度达82%，有一个高潜力合作机会。注意到贵司近期与OATLY的联动，作为OATLY的合作伙伴，我们认为结合Rockcent AI能带来实际增长。探索无限可能，希望能有机会聊聊细节。</>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 border-t border-zinc-100 bg-white flex justify-end">
+                  <button 
+                    onClick={() => setShowPersonaPreviewModal(false)}
+                    className="px-6 py-2 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 shadow-sm"
+                  >
+                    确认使用此人设
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showSimulationModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col h-[80vh]"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-blue-50/50">
+                  <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-blue-500" />
+                    模拟实战谈判: {selectedPersona}
+                  </h3>
+                  <button onClick={() => setShowSimulationModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 space-y-4">
+                  <div className="flex justify-center mb-6">
+                    <span className="bg-zinc-200/50 text-zinc-500 text-xs px-3 py-1 rounded-full font-medium">
+                      您正在扮演目标公司 (OATLY 噢麦力) 的商务代表
+                    </span>
+                  </div>
+                  
+                  {simulationMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'user' ? 'bg-blue-100 border-blue-200' : 'bg-emerald-100 border-emerald-200'}`}>
+                        {msg.role === 'user' ? <User className={`w-4 h-4 text-blue-600`} /> : <Bot className={`w-4 h-4 text-emerald-600`} />}
+                      </div>
+                      <div className={`p-4 rounded-2xl shadow-sm border text-sm leading-relaxed max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 text-white border-blue-700 rounded-tr-none' : 'bg-white text-zinc-700 border-zinc-100 rounded-tl-none'}`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {isSimulating && (
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
+                        <Bot className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-zinc-100 text-sm text-zinc-700 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                        <span className="text-zinc-500">Agent 正在思考对策...</span>
+                      </div>
+                    </div>
+                  )}
+                  {simulationHandoff && (
+                    <div className="flex justify-center mt-6">
+                      <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm">
+                        <Zap className="w-4 h-4" />
+                        已触发熔断机制，生成【高优意向单】并推送至小程序。
+                      </div>
+                    </div>
+                  )}
+                  <div ref={simulationEndRef} />
+                </div>
+                <div className="p-4 border-t border-zinc-100 bg-white">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={simulationInput}
+                      onChange={(e) => setSimulationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSimulationSend();
+                        }
+                      }}
+                      placeholder={simulationHandoff ? "谈判已结束" : "输入您的回复..."}
+                      disabled={isSimulating || simulationHandoff}
+                      className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                    />
+                    <button 
+                      onClick={handleSimulationSend}
+                      disabled={!simulationInput.trim() || isSimulating || simulationHandoff}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-zinc-200 disabled:text-zinc-400 transition-colors shadow-md"
+                    >
+                      发送
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showBrandDetailModal && selectedBrandDetail && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+                  <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-zinc-500" />
+                    品牌数字分身档案
+                  </h3>
+                  <button onClick={() => setShowBrandDetailModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 bg-white space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center border-2 border-zinc-200">
+                      <span className="text-2xl font-black text-zinc-600">{selectedBrandDetail.name.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-bold text-zinc-900">{selectedBrandDetail.name}</h4>
+                      <p className="text-sm text-zinc-500">{selectedBrandDetail.industry}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
+                      <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">受众辐射范围</div>
+                      <div className="text-xl font-black text-zinc-800">{selectedBrandDetail.reach}</div>
+                    </div>
+                    <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
+                      <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">圈层中心度</div>
+                      <div className="text-xl font-black text-blue-600">{selectedBrandDetail.centrality}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">品牌标签</div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedBrandDetail.tags.map((tag: string) => (
+                        <span key={tag} className="text-xs font-medium bg-zinc-100 text-zinc-700 px-2.5 py-1 rounded-md border border-zinc-200">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end gap-3">
+                  <button 
+                    onClick={() => setShowBrandDetailModal(false)}
+                    className="px-4 py-2 text-sm font-bold text-zinc-600 hover:text-zinc-900"
+                  >
+                    关闭
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowBrandDetailModal(false);
+                      setActiveTab('chat');
+                      setInput(`我想和 ${selectedBrandDetail.name} 合作，请帮我分析一下可行性并生成一份初步的合作方案。`);
+                    }}
+                    className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 shadow-sm"
+                  >
+                    发起合作探讨
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showIcebreakerModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-blue-50/50">
+                  <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                    <Share2 className="w-5 h-5 text-blue-500" />
+                    六度空间智能引荐
+                  </h3>
+                  <button onClick={() => setShowIcebreakerModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6">
+                  <p className="text-sm text-zinc-500 mb-4">AI 已为您生成通过 <span className="font-bold text-zinc-700">OATLY</span> 联系 <span className="font-bold text-zinc-700">蔚来汽车</span> 的破冰话术：</p>
+                  <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 text-sm text-zinc-700 whitespace-pre-wrap font-medium leading-relaxed">
+                    Hi [蔚来团队负责人],\n\n我是 {merchantName} 的主理人。最近和我们的共同合作伙伴 OATLY 的 [联系人姓名] 交流时，他强烈推荐了你们在生活方式领域的创新。\n\n我们近期在策划一场针对高净值车主的跨界活动，受众与蔚来极度契合。希望能借此机会交流一下潜在的合作空间。\n\n期待回复！
+                  </div>
+                </div>
+                <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end gap-3">
+                  <button onClick={() => setShowIcebreakerModal(false)} className="px-4 py-2 text-sm font-bold text-zinc-600 hover:text-zinc-900">取消</button>
+                  <button 
+                    onClick={() => {
+                      setShowIcebreakerModal(false);
+                      const event = new CustomEvent('showToast', { detail: '破冰话术已复制到剪贴板' });
+                      window.dispatchEvent(event);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm"
+                  >
+                    复制并去联系
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showWarRoomModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] overflow-hidden flex flex-col border border-zinc-200"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Users className="w-6 h-6 text-violet-200" />
+                      虚拟研讨室：「早C晚A」都市逃离计划
+                    </h3>
+                    <p className="text-violet-200 text-sm mt-1 opacity-90">参与方：瑞幸咖啡、燕京啤酒、牧高笛、{merchantName}</p>
+                  </div>
+                  <button onClick={() => setShowWarRoomModal(false)} className="text-white/70 hover:text-white bg-white/10 p-2 rounded-full transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50 space-y-6">
+                  <div className="flex justify-center">
+                    <span className="bg-zinc-200/50 text-zinc-500 text-xs px-3 py-1 rounded-full font-medium">AI 已建立多边谈判通道，各方智能分身已就位</span>
+                  </div>
+                  
+                  {/* Message 1 */}
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border border-blue-200 shadow-sm">
+                      <Coffee className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-zinc-100 max-w-[80%]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-zinc-900">瑞幸咖啡 (AI 分身)</span>
+                        <span className="text-[10px] text-zinc-400">10:02 AM</span>
+                      </div>
+                      <p className="text-sm text-zinc-700 leading-relaxed">我们对这个企划很感兴趣。瑞幸可以提供全国 3000 家门店的早间屏幕轮播资源，以及 5 万张 9.9 元特价券作为引流。我们需要确保活动能在小红书上产生至少 1000 篇高质量 UGC。</p>
+                    </div>
+                  </div>
+
+                  {/* Message 2 */}
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0 border border-rose-200 shadow-sm">
+                      <Tent className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-zinc-100 max-w-[80%]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-zinc-900">牧高笛 (AI 分身)</span>
+                        <span className="text-[10px] text-zinc-400">10:03 AM</span>
+                      </div>
+                      <p className="text-sm text-zinc-700 leading-relaxed">同意瑞幸的引流方案。牧高笛可以赞助 10 套顶级天幕帐篷作为终极大奖，并在官方账号发起 #早C晚A露营 话题。我们希望 {merchantName} 能提供一些高价值的实物赠品，配合我们的帐篷做成“逃离礼包”。</p>
+                    </div>
+                  </div>
+                  
+                  {/* Message 3 */}
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0 border border-amber-200 shadow-sm">
+                      <Beer className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-zinc-100 max-w-[80%]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-zinc-900">燕京啤酒 (AI 分身)</span>
+                        <span className="text-[10px] text-zinc-400">10:05 AM</span>
+                      </div>
+                      <p className="text-sm text-zinc-700 leading-relaxed">晚间的精酿畅饮我们包了！另外我们可以邀请两位厂牌 Rapper 到线下快闪店演出，提升现场氛围。前提是各方能在宣发中带上我们的新品 Tag。</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border-t border-zinc-200 bg-white">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 relative">
+                      <input 
+                        type="text" 
+                        placeholder="输入您的提议或资源承诺，AI 将自动翻译为谈判策略..." 
+                        className="w-full pl-4 pr-12 py-3 bg-zinc-100 border-transparent focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 rounded-xl text-sm transition-all"
+                      />
+                      <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm">
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <span className="text-xs text-zinc-500">AI 建议回复：</span>
+                    <button className="text-xs bg-violet-50 text-violet-700 px-3 py-1 rounded-full hover:bg-violet-100 transition-colors border border-violet-100">
+                      "我们可以提供价值 5 万元的核心产品作为抽奖赠品..."
+                    </button>
+                    <button className="text-xs bg-violet-50 text-violet-700 px-3 py-1 rounded-full hover:bg-violet-100 transition-colors border border-violet-100">
+                      "同意，我们将承接所有线上私域流量的沉淀..."
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showSocialGiftModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-rose-500" />
+                    {socialGiftType === 'poster' ? '生成联名祝贺海报' : '生成微博互动方案'}
+                  </h3>
+                  <button onClick={() => setShowSocialGiftModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-6 bg-zinc-50/50">
+                  {socialGiftType === 'poster' ? (
+                    <div className="space-y-4">
+                      <div className="aspect-[3/4] w-full bg-gradient-to-br from-rose-400 via-orange-300 to-amber-200 rounded-xl shadow-inner flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]"></div>
+                        <div className="relative z-10">
+                          <h4 className="text-3xl font-black text-white drop-shadow-md mb-2 tracking-wider">OATLY</h4>
+                          <p className="text-white/90 font-bold text-lg mb-8 drop-shadow">双十一全网破亿</p>
+                          <div className="w-16 h-1 bg-white/50 mx-auto mb-8 rounded-full"></div>
+                          <p className="text-white font-medium drop-shadow-sm">祝贺我们的超级盟友！</p>
+                          <p className="text-white/80 text-sm mt-2">未来继续携手，创造更多可能。</p>
+                          <div className="mt-12 inline-block px-4 py-1 bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-white text-xs font-bold">
+                            {merchantName} 敬上
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-500 text-center">AI 已根据 OATLY 的品牌视觉风格生成海报</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
+                            <span className="text-xs font-bold text-zinc-500">You</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-zinc-900">{merchantName}</p>
+                            <p className="text-[10px] text-zinc-400">刚刚</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-zinc-800 whitespace-pre-wrap leading-relaxed">
+                          祝 @Keep 9周年快乐！🏃‍♂️🏃‍♀️ 运动不止，探索不息。<br/><br/>今天和我们的老朋友 Keep 一起搞个大动作！关注我们并转发此条微博，抽 9 位粉丝送出【Keep x {merchantName} 联名运动大礼包】！🎁<br/><br/>#Keep9周年# #自律给我自由#
+                        </p>
+                      </div>
+                      <p className="text-xs text-zinc-500 text-center">AI 已结合双方品牌调性生成抽奖文案</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 border-t border-zinc-100 bg-white flex justify-end gap-3">
+                  <button onClick={() => setShowSocialGiftModal(false)} className="px-4 py-2 text-sm font-bold text-zinc-600 hover:text-zinc-900">取消</button>
+                  <button 
+                    onClick={() => {
+                      setShowSocialGiftModal(false);
+                      const event = new CustomEvent('showToast', { detail: socialGiftType === 'poster' ? '海报已保存并发送至对方 BD 邮箱' : '方案已同步至您的社交媒体草稿箱' });
+                      window.dispatchEvent(event);
+                    }}
+                    className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 shadow-sm"
+                  >
+                    {socialGiftType === 'poster' ? '一键发送祝贺' : '采用此方案'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {showShareGiftModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col relative"
+              >
+                {shareStep === 1 && (
+                  <>
+                    <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-blue-500" />
+                        高定版「跨界预案盲盒」
+                      </h3>
+                      <button onClick={() => setShowShareGiftModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="p-6 bg-white space-y-6">
+                      <div className="bg-zinc-50 rounded-xl p-4 border border-zinc-100">
+                        <div className="flex justify-center mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
+                              {merchantName}
+                            </div>
+                            <X className="w-4 h-4 text-zinc-400" />
+                            <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
+                              OATLY
+                            </div>
+                          </div>
+                        </div>
+                        <h4 className="text-center font-bold text-zinc-900 mb-2">早 C 晚 A 联名企划草案</h4>
+                        <p className="text-xs text-zinc-500 text-center mb-4">AI 测算受众重合度 92% | 预期 ROI 180%</p>
+                        <div className="text-xs text-zinc-600 bg-white p-3 rounded-lg border border-zinc-200">
+                          <p className="font-medium mb-1">核心亮点：</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            <li>联合推出「燕麦拿铁特调」套餐</li>
+                            <li>双微一抖矩阵资源互换</li>
+                            <li>线下门店快闪打卡活动</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setShareStep(2)}
+                        className="w-full py-3 bg-[#07C160] text-white rounded-xl font-bold hover:bg-[#06ad56] transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        发送给微信好友 (OATLY 负责人)
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {shareStep === 2 && (
+                  <div className="bg-[#EDEDED] h-[600px] flex flex-col">
+                    <div className="bg-[#EDEDED] px-4 py-3 flex items-center justify-between border-b border-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="w-5 h-5 text-zinc-800 rotate-180 cursor-pointer" onClick={() => setShareStep(1)} />
+                        <span className="font-medium text-zinc-900">OATLY 商务总监</span>
+                      </div>
+                      <div className="flex gap-4">
+                        <User className="w-5 h-5 text-zinc-800" />
+                      </div>
+                    </div>
+                    <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4">
+                      <div className="flex justify-center">
+                        <span className="text-xs text-zinc-400 bg-zinc-200/50 px-2 py-1 rounded-md">昨天 14:20</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="w-10 h-10 rounded-md bg-blue-900 shrink-0 flex items-center justify-center text-white font-bold text-xs">OATLY</div>
+                        <div className="bg-white p-3 rounded-lg rounded-tl-none max-w-[75%] text-[15px] text-zinc-900 shadow-sm">
+                          你好，之前提到的合作我们内部过了一下，觉得方向不错。
+                        </div>
+                      </div>
+                      <div className="flex justify-center">
+                        <span className="text-xs text-zinc-400 bg-zinc-200/50 px-2 py-1 rounded-md">10:15</span>
+                      </div>
+                      <div className="flex gap-3 flex-row-reverse">
+                        <div className="w-10 h-10 rounded-md bg-zinc-900 shrink-0 flex items-center justify-center text-white font-bold text-xs">{merchantName.slice(0, 2)}</div>
+                        <div className="bg-[#95EC69] p-3 rounded-lg rounded-tr-none max-w-[75%] text-[15px] text-zinc-900 shadow-sm">
+                          太好了！我用 Rockcent AI 生成了一份专属的联名企划草案，里面有详细的数据测算，您可以先看看。
+                        </div>
+                      </div>
+                      
+                      {/* WeChat Share Card */}
+                      <div className="flex gap-3 flex-row-reverse cursor-pointer group" onClick={() => setShareStep(3)}>
+                        <div className="w-10 h-10 rounded-md bg-zinc-900 shrink-0 flex items-center justify-center text-white font-bold text-xs">{merchantName.slice(0, 2)}</div>
+                        <div className="bg-white rounded-lg max-w-[75%] w-64 shadow-sm border border-zinc-200 overflow-hidden group-hover:bg-zinc-50 transition-colors">
+                          <div className="p-3">
+                            <h4 className="text-[15px] font-medium text-zinc-900 leading-snug mb-1 line-clamp-2">
+                              【加密企划】一份为您专属生成的跨界联名合作备忘录
+                            </h4>
+                            <p className="text-[12px] text-zinc-500 line-clamp-2">
+                              点击查收来自 {merchantName} 负责人的商务邀约与 AI 撮合权益。
+                            </p>
+                          </div>
+                          <div className="border-t border-zinc-100 p-2 flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center">
+                              <Sparkles className="w-2 h-2 text-white" />
+                            </div>
+                            <span className="text-[10px] text-zinc-400">Rockcent AI 跨界营销云</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-[#F7F7F7] border-t border-zinc-300 p-3 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full border border-zinc-400 flex items-center justify-center"><Activity className="w-5 h-5 text-zinc-600" /></div>
+                      <div className="flex-1 bg-white h-10 rounded-md border border-zinc-200"></div>
+                      <div className="w-8 h-8 rounded-full border border-zinc-400 flex items-center justify-center"><Plus className="w-5 h-5 text-zinc-600" /></div>
+                    </div>
+                  </div>
+                )}
+
+                {shareStep === 3 && (
+                  <div className="bg-zinc-950 h-[600px] flex flex-col relative overflow-hidden">
+                    {/* Receiver Perspective - Aha Moment */}
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-luminosity" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-zinc-900/90 to-zinc-950" />
+                    
+                    <div className="relative z-10 flex-1 overflow-y-auto">
+                      <div className="p-6 pt-12">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex justify-center mb-8"
+                        >
+                          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                            <div className="w-16 h-16 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-2xl border border-white/10">
+                              {merchantName}
+                            </div>
+                            <X className="w-6 h-6 text-white/50" />
+                            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-2xl border border-white/10">
+                              OATLY
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="text-center mb-8"
+                        >
+                          <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">早 C 晚 A 联名企划</h2>
+                          <p className="text-blue-300 text-sm">AI 测算受众重合度 92% | 预期 ROI 180%</p>
+                        </motion.div>
+
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4 }}
+                          className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8"
+                        >
+                          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-blue-400" /> 核心业务数据
+                          </h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-black/20 rounded-xl p-4">
+                              <div className="text-white/60 text-xs mb-1">预计曝光增量</div>
+                              <div className="text-2xl font-bold text-white">1500万+</div>
+                            </div>
+                            <div className="bg-black/20 rounded-xl p-4">
+                              <div className="text-white/60 text-xs mb-1">目标人群画像</div>
+                              <div className="text-sm font-medium text-white">一二线白领 / 环保主义</div>
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Interception Mask */}
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 1.5 }}
+                          className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent flex flex-col items-center justify-end pb-8 px-6"
+                        >
+                          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 w-full text-center shadow-2xl">
+                            <Lock className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                            <h4 className="text-white font-bold mb-2">该专属企划需由品牌主理人认领</h4>
+                            <p className="text-white/60 text-xs mb-6">
+                              登录立即解锁完整方案，并激活您的专属数字分身 BD。
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setShowShareGiftModal(false);
+                                setShowGlobalAlert(true);
+                                setToastMessage(`【被邀请方 OATLY】已为您预置 50000 元暗池 AI 高级寻址算力，您的数字分身已激活！\n\n【邀请方 ${merchantName}】您的好友已查收企划，恭喜您获得 S 级高潜品牌库访问权限及 5 次跨界算力奖励。`);
+                                setTimeout(() => setShowGlobalAlert(false), 5000);
+                              }}
+                              className="w-full py-3 bg-[#07C160] text-white rounded-xl font-bold hover:bg-[#06ad56] transition-colors flex items-center justify-center gap-2"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              一键授权微信手机号登录
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Global AI Alert Notification */}
+        <AnimatePresence>
+          {showGlobalAlert && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="fixed bottom-6 right-6 z-50 w-96 bg-white rounded-2xl shadow-2xl border border-rose-100 overflow-hidden"
+            >
+              <div className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 border-b border-rose-100 flex justify-between items-start">
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0 border border-rose-200">
+                    <Heart className="w-5 h-5 text-rose-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                      AI 关系维护提醒
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                      </span>
+                    </h4>
+                    <p className="text-xs text-zinc-500 mt-0.5">刚刚</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowGlobalAlert(false)} className="text-zinc-400 hover:text-zinc-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-zinc-700 mb-4">
+                  监测到您的核心盟友 <span className="font-bold">OATLY</span> 刚刚发布了双十一战报，全网销售额破亿。AI 已为您自动生成了<span className="font-bold text-rose-600">联名祝贺海报</span>。
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      setShowGlobalAlert(false);
+                      setActiveTab('network');
+                      setSocialGiftType('poster');
+                      setShowSocialGiftModal(true);
+                    }}
+                    className="flex-1 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm"
+                  >
+                    一键查看并发送
+                  </button>
+                  <button 
+                    onClick={() => setShowGlobalAlert(false)}
+                    className="px-4 py-2 bg-zinc-100 text-zinc-600 rounded-lg text-sm font-bold hover:bg-zinc-200 transition-colors"
+                  >
+                    忽略
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Global Toast Notification */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] max-w-md w-full bg-zinc-900 text-white rounded-2xl shadow-2xl border border-zinc-800 p-4 flex items-start gap-3"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 whitespace-pre-wrap text-sm leading-relaxed">
+                {toastMessage}
+              </div>
+              <button onClick={() => setToastMessage(null)} className="text-zinc-400 hover:text-white shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// --- Main App Component ---
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [merchantName, setMerchantName] = useState('');
+
+  if (!isLoggedIn) {
+    return <LoginScreen onLogin={(name) => {
+      setMerchantName(name);
+      setIsLoggedIn(true);
+    }} />;
+  }
+
+  return <Dashboard merchantName={merchantName} onLogout={() => setIsLoggedIn(false)} />;
+}

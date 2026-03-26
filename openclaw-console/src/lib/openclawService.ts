@@ -216,7 +216,7 @@ const readJson = async <T>(response: Response): Promise<T> => {
       && 'message' in payload.error
       && typeof payload.error.message === 'string'
         ? payload.error.message
-        : 'Request failed.',
+        : '请求失败。',
     );
   }
   return payload as T;
@@ -229,9 +229,9 @@ const parseErrorMessage = async (response: Response) => {
       return payload.error.message;
     }
   } catch {
-    return 'Request failed.';
+    return '请求失败。';
   }
-  return 'Request failed.';
+  return '请求失败。';
 };
 
 export const openclawService = {
@@ -366,46 +366,21 @@ export const openclawService = {
   },
 
   async getAgentModels(agentId: string) {
-    const endpoints = [
-      `/api/openclaw/agent-models?agentId=${encodeURIComponent(agentId)}`,
-      `/api/openclaw/models?agentId=${encodeURIComponent(agentId)}`,
-    ];
-    let lastError: unknown = null;
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(endpoint);
-        const payload = await readJson<{ data: OpenClawAgentModelSnapshot }>(response);
-        return payload.data;
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error('读取模型列表失败。');
+    const response = await fetch(`/api/openclaw/agent-models?agentId=${encodeURIComponent(agentId)}`);
+    const payload = await readJson<{ data: OpenClawAgentModelSnapshot }>(response);
+    return payload.data;
   },
 
   async setAgentModel(agentId: string, modelKey: string) {
-    const requestBody = JSON.stringify({ agentId, modelKey });
-    const endpoints = ['/api/openclaw/agent-models', '/api/openclaw/models'];
-    let lastError: unknown = null;
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: requestBody,
-        });
-        const payload = await readJson<{ data: OpenClawAgentModelSnapshot }>(response);
-        return payload.data;
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    if (lastError instanceof Error) {
-      throw lastError;
-    }
-    throw new Error('切换模型失败。');
+    const response = await fetch('/api/openclaw/agent-models', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ agentId, modelKey }),
+    });
+    const payload = await readJson<{ data: OpenClawAgentModelSnapshot }>(response);
+    return payload.data;
   },
 
   async getConfig() {
@@ -424,5 +399,39 @@ export const openclawService = {
     });
     const payload = await readJson<{ data: { config: OpenClawConfigDocument; reload?: OpenClawCommandResult } }>(response);
     return payload.data;
+  },
+
+  async getUpgradeStatus() {
+    const response = await fetch('/api/openclaw/upgrade-status');
+    const payload = await readJson<{ data: { currentVersion: string; targetVersion: string; upToDate: boolean; channel: string } }>(response);
+    return payload.data;
+  },
+
+  async getAgentCrons(agentId: string) {
+    const response = await fetch(`/api/openclaw/agent-crons?agentId=${encodeURIComponent(agentId)}`);
+    const payload = await readJson<{ data: Array<{ id: string; agentId: string; expression: string; description: string; enabled: boolean; nextRun: string | null }> }>(response);
+    return payload.data;
+  },
+
+  async getSessions(params?: { agentId?: string; limit?: number; offset?: number }) {
+    const qs = new URLSearchParams();
+    if (params?.agentId) qs.set('agentId', params.agentId);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const response = await fetch(`/api/sessions?${qs}`);
+    const payload = await readJson<{ data: { sessions: any[]; total: number; limit: number; offset: number } }>(response);
+    return payload.data;
+  },
+
+  async getSessionMessages(sessionKey: string) {
+    const response = await fetch(`/api/sessions/messages?sessionKey=${encodeURIComponent(sessionKey)}`);
+    return readJson(response);
+  },
+
+  async deleteSession(sessionKey: string) {
+    const response = await fetch(`/api/sessions?sessionKey=${encodeURIComponent(sessionKey)}`, {
+      method: 'DELETE',
+    });
+    return readJson<{ data: { ok: boolean; sessionKey: string } }>(response);
   },
 };
