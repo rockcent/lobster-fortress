@@ -7,18 +7,34 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-motion': ['motion'],
+            'vendor-charts': ['recharts'],
+            'vendor-markdown': ['react-markdown'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600,
+    },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+      port: 3000,
+      host: '0.0.0.0',
+      // Proxy API requests to Express backend during development
+      proxy: {
+        '/api': {
+          target: `http://localhost:${env.AI_PROXY_PORT || 3001}`,
+          changeOrigin: true,
+        },
+      },
     },
   };
 });
