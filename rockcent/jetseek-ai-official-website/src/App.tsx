@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   BrainCircuit, 
@@ -11,10 +11,13 @@ import {
   MessageSquare, 
   FileText, 
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function App() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#05050a] text-white font-sans selection:bg-purple-500/30">
       {/* Navigation */}
@@ -27,13 +30,14 @@ export default function App() {
               </div>
               <span className="text-xl font-bold tracking-tight">JETSEEK <span className="text-purple-400">捷策</span></span>
             </div>
+            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
               <a href="#features" className="hover:text-white transition-colors">核心功能</a>
               <a href="#audience" className="hover:text-white transition-colors">适用人群</a>
               <a href="#solution" className="hover:text-white transition-colors">解决方案</a>
               <a href="#pricing" className="hover:text-white transition-colors">收费模式</a>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4">
               <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 返回官网
               </a>
@@ -44,7 +48,28 @@ export default function App() {
                 免费体验
               </a>
             </div>
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
+          {/* Mobile menu dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/10 py-4 space-y-2">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">核心功能</a>
+              <a href="#audience" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">适用人群</a>
+              <a href="#solution" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">解决方案</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">收费模式</a>
+              <div className="h-px bg-white/10 my-2" />
+              <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">返回官网</a>
+              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">登录</a>
+              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="block mx-4 py-2 px-4 rounded-full bg-white text-black text-sm font-semibold text-center hover:bg-gray-200 transition-colors">免费体验</a>
+            </div>
+          )}
         </div>
       </nav>
 
