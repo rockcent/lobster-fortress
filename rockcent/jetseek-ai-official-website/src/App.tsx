@@ -506,14 +506,32 @@ export default function App() {
             </div>
             <div className="flex gap-8 md:justify-end">
               <div className="text-center">
-                <div className="w-24 h-24 bg-white/10 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-500">
-                  公众号二维码
+                <div className="w-24 h-24 bg-white/5 rounded-lg mb-2 flex flex-col items-center justify-center border border-dashed border-white/20">
+                  <svg className="w-10 h-10 text-gray-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="3" height="3" rx="0.5"/>
+                    <rect x="18" y="14" width="3" height="3" rx="0.5"/>
+                    <rect x="14" y="18" width="3" height="3" rx="0.5"/>
+                    <rect x="18" y="18" width="3" height="3" rx="0.5"/>
+                  </svg>
+                  <span className="text-[10px] text-gray-500">待填充</span>
                 </div>
                 <p className="text-sm text-gray-400">官方公众号</p>
               </div>
               <div className="text-center">
-                <div className="w-24 h-24 bg-white/10 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-500">
-                  客服二维码
+                <div className="w-24 h-24 bg-white/5 rounded-lg mb-2 flex flex-col items-center justify-center border border-dashed border-white/20">
+                  <svg className="w-10 h-10 text-gray-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="3" height="3" rx="0.5"/>
+                    <rect x="18" y="14" width="3" height="3" rx="0.5"/>
+                    <rect x="14" y="18" width="3" height="3" rx="0.5"/>
+                    <rect x="18" y="18" width="3" height="3" rx="0.5"/>
+                  </svg>
+                  <span className="text-[10px] text-gray-500">待填充</span>
                 </div>
                 <p className="text-sm text-gray-400">捷策客服</p>
               </div>
