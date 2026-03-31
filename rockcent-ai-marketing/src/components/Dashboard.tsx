@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn } from '../lib/utils';
 import { Sparkles, Database, Zap, Bot, Network, Crown, Coins, Plus, X, Loader2, Search, LogOut, ShieldCheck, Send, CheckCircle2, MessageCircle } from 'lucide-react';
-import ChatSection from '../sections/ChatSection';
-import KnowledgeSection from '../sections/KnowledgeSection';
-import MatchmakingSection from '../sections/MatchmakingSection';
-import AgentSection from '../sections/AgentSection';
-import NetworkSection from '../sections/NetworkSection';
-import OnboardingWizard from '../ui/OnboardingWizard';
-import Logo from '../ui/Logo';
-import { Message, StructuredNeed, MatchmakingSuggestion } from '../../types';
+import ChatSection from './sections/ChatSection';
+import KnowledgeSection from './sections/KnowledgeSection';
+import MatchmakingSection from './sections/MatchmakingSection';
+import AgentSection from './sections/AgentSection';
+import NetworkSection from './sections/NetworkSection';
+import OnboardingWizard from './ui/OnboardingWizard';
+import Logo from './ui/Logo';
+import { Message, StructuredNeed, MatchmakingSuggestion } from '../types';
 
 interface DashboardProps { merchantName: string; onLogout: () => void; }
 
