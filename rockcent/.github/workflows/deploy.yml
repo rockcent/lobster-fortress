@@ -1,0 +1,47 @@
+name: Deploy to Alibaba Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: jetseek-ai-official-website/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd jetseek-ai-official-website
+          npm ci
+
+      - name: Build
+        run: |
+          cd jetseek-ai-official-website
+          npm run build
+
+      - name: Deploy to Alibaba Cloud
+        uses: appleboy/ssh-action@v0.1.41
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: rockops
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          script: |
+            sudo rm -rf /usr/share/nginx/ai-marketing.bak
+            sudo mv /usr/share/nginx/ai-marketing /usr/share/nginx/ai-marketing.bak
+            sudo mkdir -p /usr/share/nginx/ai-marketing
+            sudo rsync -avz --delete \
+              ${{ github.workspace }}/jetseek-ai-official-website/dist/ \
+              /usr/share/nginx/ai-marketing/
+            sudo chown -R nginx:nginx /usr/share/nginx/ai-marketing
+            echo "Deployment complete"
