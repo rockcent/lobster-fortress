@@ -41,10 +41,10 @@ export default function App() {
               <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 返回官网
               </a>
-              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 登录
               </a>
-              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors">
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors">
                 免费体验
               </a>
             </div>
@@ -66,8 +66,8 @@ export default function App() {
               <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">收费模式</a>
               <div className="h-px bg-white/10 my-2" />
               <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">返回官网</a>
-              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">登录</a>
-              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="block mx-4 py-2 px-4 rounded-full bg-white text-black text-sm font-semibold text-center hover:bg-gray-200 transition-colors">免费体验</a>
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">登录</a>
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="block mx-4 py-2 px-4 rounded-full bg-white text-black text-sm font-semibold text-center hover:bg-gray-200 transition-colors">免费体验</a>
             </div>
           )}
         </div>
@@ -93,7 +93,7 @@ export default function App() {
               你的第二大脑，让判断更快、更准、更可信。
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-              <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold text-lg hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all flex items-center gap-2">
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold text-lg hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all flex items-center gap-2">
                 立即开始体验 <ChevronRight className="w-5 h-5" />
               </a>
               <a href="#solution" className="px-8 py-4 rounded-full border border-white/20 text-white font-semibold text-lg hover:bg-white/5 transition-all">
@@ -477,7 +477,7 @@ export default function App() {
             对比问题的检索来源、数据依据、推理思维链、最终结论与建议！
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
-            <a href="https://www.jetseek.cn" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all flex items-center gap-2">
+            <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all flex items-center gap-2">
               立即体验 JetSeek <ChevronRight className="w-5 h-5" />
             </a>
             <p className="text-sm text-purple-300 font-medium">
@@ -506,33 +506,11 @@ export default function App() {
             </div>
             <div className="flex gap-8 md:justify-end">
               <div className="text-center">
-                <div className="w-24 h-24 bg-white/5 rounded-lg mb-2 flex flex-col items-center justify-center border border-dashed border-white/20">
-                  <svg className="w-10 h-10 text-gray-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="3" height="3" rx="0.5"/>
-                    <rect x="18" y="14" width="3" height="3" rx="0.5"/>
-                    <rect x="14" y="18" width="3" height="3" rx="0.5"/>
-                    <rect x="18" y="18" width="3" height="3" rx="0.5"/>
-                  </svg>
-                  <span className="text-[10px] text-gray-500">待填充</span>
-                </div>
+                <img src="/qr-official.svg" alt="官方公众号二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" />
                 <p className="text-sm text-gray-400">官方公众号</p>
               </div>
               <div className="text-center">
-                <div className="w-24 h-24 bg-white/5 rounded-lg mb-2 flex flex-col items-center justify-center border border-dashed border-white/20">
-                  <svg className="w-10 h-10 text-gray-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="3" height="3" rx="0.5"/>
-                    <rect x="18" y="14" width="3" height="3" rx="0.5"/>
-                    <rect x="14" y="18" width="3" height="3" rx="0.5"/>
-                    <rect x="18" y="18" width="3" height="3" rx="0.5"/>
-                  </svg>
-                  <span className="text-[10px] text-gray-500">待填充</span>
-                </div>
+                <img src="/qr-service.svg" alt="捷策客服二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" />
                 <p className="text-sm text-gray-400">捷策客服</p>
               </div>
             </div>
