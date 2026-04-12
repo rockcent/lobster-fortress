@@ -65,13 +65,14 @@ export default function App() {
               className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
               aria-label={mobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'}
               aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
           {/* Mobile menu dropdown */}
           {mobileMenuOpen && (
-            <div className="md:hidden border-t border-white/10 py-4 space-y-2">
+            <div id="mobile-menu" className="md:hidden border-t border-white/10 py-4 space-y-2">
               <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">核心功能</a>
               <a href="#audience" onClick={(e) => handleNavClick(e, '#audience')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">适用人群</a>
               <a href="#solution" onClick={(e) => handleNavClick(e, '#solution')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">解决方案</a>
@@ -360,22 +361,22 @@ export default function App() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-purple-900/20 hover:border-purple-500/30 transition-all cursor-pointer">
+            <div className="p-6 rounded-2xl border border-white/10 hover:bg-purple-900/20 hover:border-purple-500/30 transition-all">
               <MessageSquare className="w-8 h-8 text-purple-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">任务导向对话引擎</h3>
               <p className="text-sm text-gray-400">基于问题场景检索专业知识库，构建完整推理链，生成回复并附带引用链接。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-blue-900/20 hover:border-blue-500/30 transition-all cursor-pointer">
+            <div className="p-6 rounded-2xl border border-white/10 hover:bg-blue-900/20 hover:border-blue-500/30 transition-all">
               <Users className="w-8 h-8 text-blue-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">话题广场</h3>
               <p className="text-sm text-gray-400">发现高质量问题，借力共创智慧。一键复用优质提问，获取个性化AI推理结果。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-emerald-900/20 hover:border-emerald-500/30 transition-all cursor-pointer">
+            <div className="p-6 rounded-2xl border border-white/10 hover:bg-emerald-900/20 hover:border-emerald-500/30 transition-all">
               <FileText className="w-8 h-8 text-emerald-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">会员资讯</h3>
               <p className="text-sm text-gray-400">每日精选热点与个性推荐，让资讯成为可操作的AI提问入口，洞察先机。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-orange-900/20 hover:border-orange-500/30 transition-all cursor-pointer">
+            <div className="p-6 rounded-2xl border border-white/10 hover:bg-orange-900/20 hover:border-orange-500/30 transition-all">
               <Database className="w-8 h-8 text-orange-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">私有知识库</h3>
               <p className="text-sm text-gray-400">构建专属知识地图，沉淀行业理解、判断逻辑与内容偏好，实现长期认知复利。</p>
