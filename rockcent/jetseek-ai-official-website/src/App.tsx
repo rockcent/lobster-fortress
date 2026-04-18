@@ -31,8 +31,10 @@ export default function App() {
   };
   return (
     <div className="min-h-screen bg-[#05050a] text-white font-sans selection:bg-purple-500/30">
+      {/* Skip to main content for keyboard/screen reader users */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:font-semibold focus:text-sm">跳转到主要内容</a>
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#05050a]/80 backdrop-blur-md border-b border-white/10">
+      <nav aria-label="主导航" className="fixed top-0 w-full z-50 bg-[#05050a]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
@@ -65,14 +67,13 @@ export default function App() {
               className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
               aria-label={mobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'}
               aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
           {/* Mobile menu dropdown */}
           {mobileMenuOpen && (
-            <div id="mobile-menu" className="md:hidden border-t border-white/10 py-4 space-y-2">
+            <div className="md:hidden border-t border-white/10 py-4 space-y-2">
               <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">核心功能</a>
               <a href="#audience" onClick={(e) => handleNavClick(e, '#audience')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">适用人群</a>
               <a href="#solution" onClick={(e) => handleNavClick(e, '#solution')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">解决方案</a>
@@ -87,7 +88,7 @@ export default function App() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section id="main-content" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(120,0,255,0.15)_0%,transparent_60%)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
@@ -191,10 +192,10 @@ export default function App() {
       </section>
 
       {/* Pain Points */}
-      <section className="py-24 bg-black/50 border-y border-white/5">
+      <section aria-labelledby="pain-points-heading" className="py-24 bg-black/50 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">为什么决策越来越难?</h2>
+            <h2 id="pain-points-heading" className="text-3xl md:text-4xl font-bold mb-4">为什么决策越来越难?</h2>
             <p className="text-gray-400 text-lg">70%的人生困局,始于决策时的信息偏差。</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -218,11 +219,11 @@ export default function App() {
       </section>
 
       {/* Prequel / History */}
-      <section className="py-24">
+      <section aria-labelledby="history-heading" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">22年后,我们决定做一个决策的<span className="text-purple-400">"第二大脑"</span></h2>
+              <h2 id="history-heading" className="text-3xl md:text-4xl font-bold mb-6">22年后,我们决定做一个决策的<span className="text-purple-400">"第二大脑"</span></h2>
               <div className="space-y-8">
                 <div className="relative pl-8 before:absolute before:left-0 before:top-2 before:bottom-0 before:w-px before:bg-gradient-to-b before:from-purple-500 before:to-transparent">
                   <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-purple-500" />
@@ -269,10 +270,10 @@ export default function App() {
       </section>
 
       {/* Target Audience */}
-      <section id="audience" className="py-24">
+      <section id="audience" aria-labelledby="audience-heading" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">谁需要捷策提升决策效率?</h2>
+            <h2 id="audience-heading" className="text-3xl md:text-4xl font-bold mb-4">谁需要捷策提升决策效率?</h2>
             <p className="text-gray-400 text-lg">适合需要基于可信数据和清晰逻辑做出重要判断的用户群体</p>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
@@ -305,10 +306,10 @@ export default function App() {
       </section>
 
       {/* Core Solution */}
-      <section id="solution" className="py-24 bg-black/50 border-y border-white/5">
+      <section id="solution" aria-labelledby="solution-heading" className="py-24 bg-black/50 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">专业、可靠、智能的解决方案</h2>
+            <h2 id="solution-heading" className="text-3xl md:text-4xl font-bold mb-4">专业、可靠、智能的解决方案</h2>
             <p className="text-gray-400 text-lg">打通"数据采集-知识加工-智能检索-深度分析"全链路赋能决策体系</p>
           </div>
 
@@ -353,10 +354,10 @@ export default function App() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24">
+      <section id="features" aria-labelledby="features-heading" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">产品核心功能</h2>
+            <h2 id="features-heading" className="text-3xl md:text-4xl font-bold mb-4">产品核心功能</h2>
             <p className="text-gray-400 text-lg">专为提升决策效率设计的AI智能体</p>
           </div>
 
@@ -386,10 +387,10 @@ export default function App() {
       </section>
 
       {/* Comparison */}
-      <section className="py-24">
+      <section aria-labelledby="comparison-heading" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">捷策与通用AI智能体有什么不同?</h2>
+            <h2 id="comparison-heading" className="text-3xl md:text-4xl font-bold mb-4">捷策与通用AI智能体有什么不同?</h2>
             <p className="text-gray-400 text-lg">显著减少幻觉 (AI Hallucination)</p>
           </div>
 
@@ -399,39 +400,39 @@ export default function App() {
             <table className="w-full min-w-[800px] border-collapse">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="py-4 px-6 text-left text-gray-400 font-medium w-1/5">维度</th>
-                  <th className="py-4 px-6 text-left text-gray-400 font-medium w-2/5">通用AI + 联网搜索</th>
-                  <th className="py-4 px-6 text-left text-purple-400 font-medium w-2/5">捷策AI</th>
+                  <th scope="col" className="py-4 px-6 text-left text-gray-400 font-medium w-1/5">维度</th>
+                  <th scope="col" className="py-4 px-6 text-left text-gray-400 font-medium w-2/5">通用AI + 联网搜索</th>
+                  <th scope="col" className="py-4 px-6 text-left text-purple-400 font-medium w-2/5">捷策AI</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">内容来源</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">内容来源</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">即时抓取网页或搜索摘要,质量取决于网页来源,内容碎片化,信噪比低</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">私有化预处理的高质量结构化数据(舆情、研报、公告、图表、财报)</td>
                 </tr>
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">数据组织能力</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">数据组织能力</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">靠语义摘要,多为零散内容拼接</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">内置知识图谱 + 实体抽取 + RAG语义重排</td>
                 </tr>
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">判断方式</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">判断方式</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">回答表面问题,但难推导"为什么这样判断"。多数为概率生成,难以验证出处或引用断链</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">强调因果链推理、结论溯源和变量解释。所有结论均附溯源链接,支持原文核查</td>
                 </tr>
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">追问机制</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">追问机制</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">可能陷入上下文混乱或语义偏离</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">多轮逻辑链稳定递进,支持结构补全</td>
                 </tr>
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">抗幻觉机制</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">抗幻觉机制</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">存在"逻辑幻觉"风险,不确定信息也强答</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">多轮追问 + 结果扩展校验 + 不确定性提示</td>
                 </tr>
                 <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td className="py-6 px-6 font-medium">适用场景</td>
+                  <td scope="row" className="py-6 px-6 font-medium cursor-default">适用场景</td>
                   <td className="py-6 px-6 text-gray-400 text-sm">闲聊陪伴、写文案、翻译、知识科普等</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">投资分析、政策解读、竞品对比、数据归因、报告生成</td>
                 </tr>
@@ -442,10 +443,10 @@ export default function App() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 bg-black/50 border-y border-white/5">
+      <section id="pricing" aria-labelledby="pricing-heading" className="py-24 bg-black/50 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">收费模式</h2>
+            <h2 id="pricing-heading" className="text-3xl md:text-4xl font-bold mb-4">收费模式</h2>
             <p className="text-gray-400 text-lg">基于算力消耗,按需使用,公平合理 (100策略点 = 1元)</p>
           </div>
 
@@ -483,10 +484,10 @@ export default function App() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
+      <section aria-labelledby="cta-heading" className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-purple-900/20" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">你不信?<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">不如现在就试一次?</span></h2>
+          <h2 id="cta-heading" className="text-4xl md:text-5xl font-bold mb-6">你不信?<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">不如现在就试一次?</span></h2>
           <p className="text-xl text-gray-300 mb-10">
             请用你的专业技能,按照结构化的提问技巧,提出一个深度问题。<br/>
             对比问题的检索来源、数据依据、推理思维链、最终结论与建议!
@@ -499,7 +500,9 @@ export default function App() {
               ✨ 扫码免费获取1000点策略点
             </p>
           </div>
-          <p className="mt-8 text-gray-400 italic">"不试你不知道,试完你就换不回去了!"</p>
+          <p className="mt-8 text-gray-400 italic text-base">
+            "不试你不知道，试完你就换不回去了！"
+          </p>
         </div>
       </section>
 
