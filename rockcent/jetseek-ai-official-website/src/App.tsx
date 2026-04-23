@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+// 检测用户是否偏好减少动画（无障碍）
+const prefersReducedMotion = typeof window !== 'undefined'
+  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  : false;
 import { motion } from 'motion/react';
 import {
   BrainCircuit,
@@ -18,6 +23,36 @@ import {
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // 移动菜单点击外部关闭
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mobileMenuOpen &&
+          mobileMenuRef.current &&
+          !mobileMenuRef.current.contains(e.target as Node) &&
+          menuButtonRef.current &&
+          !menuButtonRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    // 键盘Escape关闭
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [mobileMenuOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('#')) {
@@ -51,10 +86,10 @@ export default function App() {
               <a href="#pricing" onClick={(e) => handleNavClick(e, '#pricing')} className="hover:text-white transition-colors cursor-pointer">收费模式</a>
             </div>
             <div className="hidden md:flex items-center gap-4">
-              <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" aria-label="访问乐宸官网" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 返回官网
               </a>
-              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" aria-label="登录捷策JetSeek" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 登录
               </a>
               <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors">
@@ -67,23 +102,29 @@ export default function App() {
               className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
               aria-label={mobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'}
               aria-expanded={mobileMenuOpen}
+              ref={menuButtonRef}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
           {/* Mobile menu dropdown */}
-          {mobileMenuOpen && (
-            <div className="md:hidden border-t border-white/10 py-4 space-y-2">
-              <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">核心功能</a>
-              <a href="#audience" onClick={(e) => handleNavClick(e, '#audience')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">适用人群</a>
-              <a href="#solution" onClick={(e) => handleNavClick(e, '#solution')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">解决方案</a>
-              <a href="#pricing" onClick={(e) => handleNavClick(e, '#pricing')} className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">收费模式</a>
-              <div className="h-px bg-white/10 my-2" />
-              <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">返回官网</a>
-              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">登录</a>
-              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" className="block mx-4 py-2 px-4 rounded-full bg-white text-black text-sm font-semibold text-center hover:bg-gray-200 transition-colors">免费体验</a>
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: mobileMenuOpen ? 1 : 0, height: mobileMenuOpen ? 'auto' : 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="md:hidden overflow-hidden border-t border-white/10"
+          >
+            <div className="py-4 space-y-2" ref={mobileMenuRef} role="menu" aria-label="移动端导航菜单">
+              <a href="#features" onClick={(e) => handleNavClick(e, '#features')} role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">核心功能</a>
+              <a href="#audience" onClick={(e) => handleNavClick(e, '#audience')} role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">适用人群</a>
+              <a href="#solution" onClick={(e) => handleNavClick(e, '#solution')} role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">解决方案</a>
+              <a href="#pricing" onClick={(e) => handleNavClick(e, '#pricing')} role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">收费模式</a>
+              <div className="h-px bg-white/10 my-2" role="separator" />
+              <a href="https://www.rockcent.com" target="_blank" rel="noreferrer" role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">返回官网</a>
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" role="menuitem" className="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">登录</a>
+              <a href="https://www.jetseek.ai" target="_blank" rel="noreferrer" role="menuitem" className="block mx-4 py-2 px-4 rounded-full bg-white text-black text-sm font-semibold text-center hover:bg-gray-200 transition-colors">免费体验</a>
             </div>
-          )}
+          </motion.div>
         </div>
       </nav>
 
@@ -92,9 +133,9 @@ export default function App() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(120,0,255,0.15)_0%,transparent_60%)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8 }}
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm font-medium mb-8">
               <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
@@ -123,10 +164,10 @@ export default function App() {
                 <div className="hidden md:flex flex-col w-64 border-r border-white/10 bg-white/5 p-4">
                   <div className="text-xs font-bold text-gray-500 mb-4 uppercase tracking-wider">历史对话</div>
                   <div className="space-y-2">
-                    <div className="p-3 rounded-xl bg-white/10 text-sm text-gray-200 truncate border border-white/5">美国在2025年6月到期...</div>
-                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors cursor-pointer">人形机器人早期项目投资...</div>
-                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors cursor-pointer">新能源主题基金分析...</div>
-                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors cursor-pointer">600234 科新发展的投资机会</div>
+                    <div className="p-3 rounded-xl bg-white/10 text-sm text-gray-200 truncate border border-white/5" aria-label="历史对话：美国在2025年6月到期美债分析">美国在2025年6月到期...</div>
+                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors" aria-label="历史对话：人形机器人早期项目投资">人形机器人早期项目投资...</div>
+                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors" aria-label="历史对话：新能源主题基金分析">新能源主题基金分析...</div>
+                    <div className="p-3 rounded-xl hover:bg-white/5 text-sm text-gray-500 truncate transition-colors" aria-label="历史对话：600234 科新发展的投资机会">600234 科新发展的投资机会</div>
                   </div>
                 </div>
                 {/* Main Chat Area */}
@@ -179,7 +220,7 @@ export default function App() {
                         <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-gray-300 shadow-sm leading-relaxed">
                           <p className="mb-3">好的,我需要回答用户关于2025年6月及全年美债到期规模的问题,并找到权威数据验证。</p>
                           <p className="mb-3">首先,检查用户问题是否存在常识性错误。用户询问的是2025年6月和全年的美债到期量,需要权威数据支持。</p>
-                          <p className="text-gray-400">接下来,查看提供的正文材料。材料中多个来源提到了美债到期情况。例如,材料 <span className="text-purple-400 cursor-pointer hover:underline">[1]</span> 来自公众号"一瑜中的"的文章指出,以每年1月1日为观察日,2025年美债到期规模为10.8万亿美元...</p>
+                          <p className="text-gray-400">接下来,查看提供的正文材料。材料中多个来源提到了美债到期情况。例如,材料 <span className="text-purple-400" title="引用来源1">[1]</span> 来自公众号"一瑜中的"的文章指出,以每年1月1日为观察日,2025年美债到期规模为10.8万亿美元...</p>
                         </div>
                       </div>
                     </div>
@@ -362,22 +403,22 @@ export default function App() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-purple-900/20 hover:border-purple-500/30 transition-all">
+            <div role="article" aria-label="任务导向对话引擎功能介绍" className="p-6 rounded-2xl border border-white/10 hover:bg-purple-900/20 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/50 transition-all">
               <MessageSquare className="w-8 h-8 text-purple-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">任务导向对话引擎</h3>
               <p className="text-sm text-gray-400">基于问题场景检索专业知识库，构建完整推理链，生成回复并附带引用链接。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-blue-900/20 hover:border-blue-500/30 transition-all">
+            <div role="article" aria-label="话题广场功能介绍" className="p-6 rounded-2xl border border-white/10 hover:bg-blue-900/20 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all">
               <Users className="w-8 h-8 text-blue-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">话题广场</h3>
               <p className="text-sm text-gray-400">发现高质量问题，借力共创智慧。一键复用优质提问，获取个性化AI推理结果。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-emerald-900/20 hover:border-emerald-500/30 transition-all">
+            <div role="article" aria-label="会员资讯功能介绍" className="p-6 rounded-2xl border border-white/10 hover:bg-emerald-900/20 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10 focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500/50 transition-all">
               <FileText className="w-8 h-8 text-emerald-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">会员资讯</h3>
               <p className="text-sm text-gray-400">每日精选热点与个性推荐，让资讯成为可操作的AI提问入口，洞察先机。</p>
             </div>
-            <div className="p-6 rounded-2xl border border-white/10 hover:bg-orange-900/20 hover:border-orange-500/30 transition-all">
+            <div role="article" aria-label="私有知识库功能介绍" className="p-6 rounded-2xl border border-white/10 hover:bg-orange-900/20 hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 focus-within:ring-2 focus-within:ring-orange-500/50 focus-within:border-orange-500/50 transition-all">
               <Database className="w-8 h-8 text-orange-400 mb-4" />
               <h3 className="text-lg font-bold mb-2">私有知识库</h3>
               <p className="text-sm text-gray-400">构建专属知识地图，沉淀行业理解、判断逻辑与内容偏好，实现长期认知复利。</p>
@@ -406,33 +447,33 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">内容来源</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">内容来源</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">即时抓取网页或搜索摘要,质量取决于网页来源,内容碎片化,信噪比低</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">私有化预处理的高质量结构化数据(舆情、研报、公告、图表、财报)</td>
                 </tr>
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">数据组织能力</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">数据组织能力</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">靠语义摘要,多为零散内容拼接</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">内置知识图谱 + 实体抽取 + RAG语义重排</td>
                 </tr>
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">判断方式</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">判断方式</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">回答表面问题,但难推导"为什么这样判断"。多数为概率生成,难以验证出处或引用断链</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">强调因果链推理、结论溯源和变量解释。所有结论均附溯源链接,支持原文核查</td>
                 </tr>
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">追问机制</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">追问机制</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">可能陷入上下文混乱或语义偏离</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">多轮逻辑链稳定递进,支持结构补全</td>
                 </tr>
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">抗幻觉机制</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">抗幻觉机制</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">存在"逻辑幻觉"风险,不确定信息也强答</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">多轮追问 + 结果扩展校验 + 不确定性提示</td>
                 </tr>
-                <tr className="hover:bg-purple-900/20 transition-colors">
-                  <td scope="row" className="py-6 px-6 font-medium cursor-default">适用场景</td>
+                <tr className="hover:bg-purple-900/20 transition-colors cursor-default">
+                  <th scope="row" className="py-6 px-6 font-medium text-left cursor-default bg-[#05050a]">适用场景</th>
                   <td className="py-6 px-6 text-gray-400 text-sm">闲聊陪伴、写文案、翻译、知识科普等</td>
                   <td className="py-6 px-6 text-purple-200 text-sm">投资分析、政策解读、竞品对比、数据归因、报告生成</td>
                 </tr>
@@ -461,7 +502,7 @@ export default function App() {
               </ul>
             </div>
             <div className="p-8 rounded-3xl border border-purple-500/50 bg-purple-900/20 relative lg:-translate-y-4">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold">推荐</div>
+              <div role="note" aria-label="推荐方案" className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold">推荐</div>
               <h3 className="text-xl font-bold mb-2 text-purple-400">高频使用客户</h3>
               <div className="h-px w-full bg-white/10 my-6" />
               <ul className="space-y-4 text-sm text-gray-300">
@@ -524,11 +565,11 @@ export default function App() {
             </div>
             <div className="flex gap-8 md:justify-end">
               <div className="text-center">
-                <img src="/qr-official.svg" alt="官方公众号二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" />
+                <img src="/qr-official.svg" alt="官方公众号二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" loading="lazy" />
                 <p className="text-sm text-gray-400">官方公众号</p>
               </div>
               <div className="text-center">
-                <img src="/qr-service.svg" alt="捷策客服二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" />
+                <img src="/qr-service.svg" alt="捷策客服二维码" className="w-24 h-24 rounded-lg mb-2 object-cover bg-white" width="96" height="96" loading="lazy" />
                 <p className="text-sm text-gray-400">捷策客服</p>
               </div>
             </div>
