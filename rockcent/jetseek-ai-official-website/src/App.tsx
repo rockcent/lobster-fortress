@@ -1,9 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-// 检测用户是否偏好减少动画（无障碍）
-const prefersReducedMotion = typeof window !== 'undefined'
-  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  : false;
 import { motion } from 'motion/react';
 import {
   BrainCircuit,
@@ -25,6 +20,16 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // 检测用户是否偏好减少动画（响应系统无障碍偏好变化）
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // 移动菜单点击外部关闭
   useEffect(() => {
@@ -562,6 +567,11 @@ export default function App() {
               <p className="text-gray-400 mb-2">客服电话:020-28187838</p>
               <p className="text-gray-400">官方邮箱:jetseek@rockcent.com</p>
               <p className="text-gray-400">公司地址:广州市天河区黄埔大道西农信大厦</p>
+              <div className="flex gap-4 mt-3 text-sm text-gray-500">
+                <a href="https://www.jetseek.ai/privacy" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">隐私政策</a>
+                <span aria-hidden="true">·</span>
+                <a href="https://www.jetseek.ai/terms" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">使用条款</a>
+              </div>
             </div>
             <div className="flex gap-8 md:justify-end">
               <div className="text-center">
