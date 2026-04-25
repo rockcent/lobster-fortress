@@ -112,11 +112,11 @@ export default function App() {
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
-          {/* Mobile menu dropdown */}
+          {/* Mobile menu dropdown - respects prefers-reduced-motion for accessibility */}
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, height: 0 }}
             animate={{ opacity: mobileMenuOpen ? 1 : 0, height: mobileMenuOpen ? 'auto' : 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.25, ease: 'easeInOut' }}
             className="md:hidden overflow-hidden border-t border-white/10"
           >
             <div className="py-4 space-y-2" ref={mobileMenuRef} role="menu" aria-label="移动端导航菜单">
